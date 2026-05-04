@@ -5,3 +5,25 @@ body,
 #root {
   height: 100%;
 }
+
+body {
+  font-family: 'Pretendard', sans-serif;
+}
+
+@layer utilities {
+  /* 스크롤바 숨기기 */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/fonts/PretendardVariable.woff2') format('woff2-variations');
+  font-weight: 45 920;
+  font-style: normal;
+}

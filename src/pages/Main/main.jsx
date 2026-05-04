@@ -7,7 +7,7 @@ import MedicalRecord from '@/components/Main/MedicalRecord';
 export default function Main() {
   return (
     <div className="flex flex-col">
-      <div className="flex flex-col items-center py-1">
+      <div className="flex flex-col items-center py-1 gap-1">
         <MainPost />
         <LoginSuggestBanner />
       </div>
