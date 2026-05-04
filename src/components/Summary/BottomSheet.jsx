@@ -5,7 +5,7 @@ import TrashIcon from '@/assets/icons/trash.svg?react';
 
 function EventRow({ title, time }) {
   return (
-    <div className="flex items-center justify-between border-t border-[#F3F3F3] px-6 py-5">
+    <div className="flex items-center justify-between px-6 py-5">
       <div className="flex items-center gap-4">
         <span className="h-6 w-1 rounded bg-[#FFC721]" />
         <p className="text-[18px] font-semibold leading-none text-[#8D8782]">{title}</p>
@@ -57,15 +57,20 @@ export default function BottomSheet({
         </div>
       </div>
 
-      <div className="mb-3 mx-auto w-[88%] border-t-[0.5px] border-[#A49F9B]" />
+      <div className="mb-2 mx-auto w-[88%] border-t-[0.5px] border-[#A49F9B] opacity-50" />
 
       <div>
         {events.length > 0 ? (
-          events.map((event) => (
-            <EventRow key={event.label} title={event.label} time="오전 10:30" />
+          events.map((event, index) => (
+            <div key={event.label}>
+              {index > 0 && (
+                <div className="mx-auto w-[88%] border-t-[0.5px] border-[#A49F9B] opacity-50" />
+              )}
+              <EventRow title={event.label} time="오전 10:30" />
+            </div>
           ))
         ) : (
-          <div className="border-t border-[#F3F3F3] px-6 py-8 text-center text-[18px] text-[#B7ADA5]">
+          <div className="px-6 py-8 text-center text-[18px] text-[#B7ADA5]">
             등록된 일정이 없습니다.
           </div>
         )}
