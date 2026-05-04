@@ -43,7 +43,7 @@ export default function NavBar() {
               const Icon = isActive ? tab.ActiveIcon : tab.InactiveIcon;
               return (
                 <>
-                  <Icon className="size-[30px]" />
+                  <Icon className="size-7.5" />
                   <span
                     className={`text-xs font-medium tracking-[-0.48px] ${
                       isActive ? 'text-[#FFC721]' : 'text-[#7D7D7D]'
