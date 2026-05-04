@@ -6,7 +6,7 @@ import RootLayout from '@/layouts/RootLayout';
 import ServiceLayout from '@/layouts/ServiceLayout';
 import ProtectedRoute from '@/router/ProtectedRoute';
 
-//const page = (importFn) => () => importFn().then((m) => ({ Component: m.default }));
+const page = (importFn) => () => importFn().then((m) => ({ Component: m.default }));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,6 +18,7 @@ const router = createBrowserRouter([
   {
     Component: RootLayout,
     children: [
+      { path: '/', lazy: page(() => import('@/pages/Main/main')) },
       {
         Component: ProtectedRoute,
         children: [
