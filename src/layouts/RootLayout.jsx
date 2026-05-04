@@ -1,26 +1,22 @@
 import { useState } from 'react';
-import { useLocation, useNavigation } from 'react-router';
 import { Outlet, ScrollRestoration } from 'react-router';
 
-//import Navbar from "../commons/navbar";
-// import Header from "../commons/Header";
+import Header from '@/components/common/Header';
 
 export default function RootLayout() {
-  const { pathname } = useLocation();
-  const navigation = useNavigation();
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const hasToken = !!localStorage.getItem('accessToken');
-  const hideNav = !hasToken && pathname === '/';
-  const isLoading = navigation.state === 'loading';
+  const [isLoading, setIsLoading] = useState(false);
 
   return (
-    <main>
-      {isLoading && <LoadingBar />}
-      {/* <Header /> */}
-      <Outlet context={{ onModalChange: setIsModalOpen }} />
+    <div className="bg-gray-50 h-full flex flex-col">
+      <div className="relative mx-auto flex flex-col flex-1 w-full max-w-112.5 h-full bg-white shadow-lg">
+        <div className="min-h-0 flex-1">
+          <Header />
+          <Outlet context={{ setIsModalOpen, isModalOpen, setIsLoading }} />
+        </div>
+        {isLoading && <Loading />}
+      </div>
       <ScrollRestoration />
-      {!isModalOpen && !hideNav && <Navbar />}
-    </main>
+    </div>
   );
 }
