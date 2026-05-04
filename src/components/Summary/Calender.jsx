@@ -1,7 +1,18 @@
+import { useMemo, useState } from 'react';
+
 import MicrophoneIcon from '@/assets/icons/summary/microphone.svg?react';
+import BottomSheet from '@/components/Summary/BottomSheet';
 import { CELLS, WEEK_DAYS } from '@/constants/calenderDummyData';
 
 export default function Calendar() {
+  const initialSelectedIndex = useMemo(() => CELLS.findIndex((cell) => cell.selected), []);
+  const [selectedIndex, setSelectedIndex] = useState(
+    initialSelectedIndex >= 0 ? initialSelectedIndex : null
+  );
+
+  const selectedCell = selectedIndex !== null ? CELLS[selectedIndex] : null;
+  const selectedWeekDay = selectedIndex !== null ? WEEK_DAYS[selectedIndex % 7]?.label : '';
+
   return (
     <section className="relative h-[530px] w-full overflow-hidden bg-white px-6 pb-6 pt-[25px]">
       <div className="mb-5 flex h-[39px] items-center justify-between">
@@ -45,10 +56,12 @@ export default function Calendar() {
         ))}
 
         {CELLS.map((cell, index) => (
-          <div
+          <button
+            type="button"
             key={`${cell.day}-${index}`}
+            onClick={() => setSelectedIndex(index)}
             className={`px-[2px] py-[2px] ${
-              cell.selected
+              selectedIndex === index
                 ? 'h-[84px] overflow-hidden rounded border border-[#FFC721]'
                 : 'h-[81px]'
             }`}
@@ -58,7 +71,7 @@ export default function Calendar() {
                 cell.muted ? 'text-[#252525]/50' : 'text-[#252525]'
               }`}
             >
-              {cell.selected ? (
+              {selectedIndex === index ? (
                 <span className="flex size-[18px] items-center justify-center rounded-full bg-[#FFC721] text-[10px] text-white">
                   {cell.day}
                 </span>
@@ -76,7 +89,7 @@ export default function Calendar() {
                 </div>
               ))}
             </div>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -87,6 +100,22 @@ export default function Calendar() {
       >
         <MicrophoneIcon className="size-10" />
       </button>
+
+      {selectedIndex !== null && (
+        <button
+          type="button"
+          aria-label="오버레이 닫기"
+          onClick={() => setSelectedIndex(null)}
+          className="fixed inset-0 z-40 bg-black/35"
+        />
+      )}
+
+      <BottomSheet
+        isOpen={selectedIndex !== null}
+        selectedLabel={selectedCell ? `4월 ${selectedCell.day}일 ${selectedWeekDay}요일` : ''}
+        events={selectedCell?.events ?? []}
+        onClose={() => setSelectedIndex(null)}
+      />
     </section>
   );
 }
