@@ -3,7 +3,7 @@ import { CELLS, WEEK_DAYS } from '@/constants/calenderDummyData';
 
 export default function Calendar() {
   return (
-    <section className="relative h-[500px] w-full overflow-hidden bg-white px-6 pb-6 pt-[15px]">
+    <section className="relative h-[530px] w-full overflow-hidden bg-white px-6 pb-6 pt-[25px]">
       <div className="mb-5 flex h-[39px] items-center justify-between">
         <button
           type="button"
@@ -39,7 +39,7 @@ export default function Calendar() {
 
       <div className="grid grid-cols-7">
         {WEEK_DAYS.map((day) => (
-          <div key={day.label} className={`pb-1 text-center text-sm font-bold ${day.color}`}>
+          <div key={day.label} className={`pb-2 text-center text-sm font-bold ${day.color}`}>
             {day.label}
           </div>
         ))}
@@ -50,7 +50,7 @@ export default function Calendar() {
             className={`px-[2px] py-[2px] ${
               cell.selected
                 ? 'h-[84px] overflow-hidden rounded border border-[#FFC721]'
-                : 'h-[69px]'
+                : 'h-[81px]'
             }`}
           >
             <div

@@ -50,6 +50,4 @@ export const CELLS = [
   { day: 29, muted: true },
   { day: 30, muted: true },
   { day: 31, muted: true },
-  { day: 13, muted: true },
-  { day: 13, muted: true },
 ];
