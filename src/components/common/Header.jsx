@@ -1,6 +1,6 @@
-import BellIcon from '@/assets/icons/bell_icon.svg?react';
-import LogoIcon from '@/assets/icons/logo_icon.svg?react';
-import UserIcon from '@/assets/icons/user_icon.svg?react';
+import BellIcon from '@/assets/icons/main/bell_icon.svg?react';
+import LogoIcon from '@/assets/icons/main/logo_icon.svg?react';
+import UserIcon from '@/assets/icons/main/user_icon.svg?react';
 
 export default function Header() {
   return (
