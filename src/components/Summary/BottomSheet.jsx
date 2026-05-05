@@ -71,9 +71,11 @@ export default function BottomSheet({
   });
 
   const [selectedEditRowIndex, setSelectedEditRowIndex] = useState(null);
+  const [isAddingForm, setIsAddingForm] = useState(false);
 
   const exitEditModesFully = useCallback(() => {
     setSelectedEditRowIndex(null);
+    setIsAddingForm(false);
     exitEditModes();
   }, [exitEditModes]);
 
@@ -99,27 +101,55 @@ export default function BottomSheet({
     enterDeleteMode();
   }, [exitEditModesFully, enterDeleteMode]);
 
-  const handleSaveEdit = useCallback(() => {
-    if (editingIndex === null || !formDraft.label.trim()) return;
-    const next = events.map((e, i) => {
-      if (i !== editingIndex) return { ...e };
-      return {
-        ...e,
-        label: formDraft.label.trim(),
-        location: formDraft.location,
-        memo: formDraft.memo,
-        time: formatKoreanMeridiemTime(formDraft.time),
-        color: formDraft.color ?? e.color,
-      };
+  const openAddScheduleForm = useCallback(() => {
+    exitEditModesFully();
+    handleCancelDeleteMode();
+    setFormDraft({
+      label: '',
+      location: '',
+      memo: '',
+      time: '오전 10:30',
+      color: 'bg-[#FFC721]',
     });
+    setIsAddingForm(true);
+    onAddSchedule();
+  }, [exitEditModesFully, handleCancelDeleteMode, onAddSchedule]);
+
+  const handleSaveForm = useCallback(() => {
+    if (!formDraft.label.trim()) return;
+    const formattedTime = formatKoreanMeridiemTime(formDraft.time);
+    const next = isAddingForm
+      ? [
+          ...events.map((e) => ({ ...e })),
+          {
+            label: formDraft.label.trim(),
+            location: formDraft.location,
+            memo: formDraft.memo,
+            time: formattedTime,
+            color: formDraft.color ?? 'bg-[#FFC721]',
+          },
+        ]
+      : events.map((e, i) => {
+          if (i !== editingIndex) return { ...e };
+          return {
+            ...e,
+            label: formDraft.label.trim(),
+            location: formDraft.location,
+            memo: formDraft.memo,
+            time: formattedTime,
+            color: formDraft.color ?? e.color,
+          };
+        });
+
     onSaveEvents(next);
     exitEditModesFully();
-  }, [editingIndex, events, formDraft, onSaveEvents, exitEditModesFully]);
+  }, [editingIndex, events, formDraft, isAddingForm, onSaveEvents, exitEditModesFully]);
 
   if (!isOpen) return null;
 
   const trailingNormal = <DownArrowIcon className="size-[12px]" />;
   const isEditForm = editPhase === 'form';
+  const isFormMode = isEditForm || isAddingForm;
   const isEditList = editPhase === 'list';
   const saveEditDisabled = !formDraft.label.trim();
 
@@ -150,11 +180,11 @@ export default function BottomSheet({
   return (
     <div
       className={`fixed bottom-0 left-1/2 z-50 w-full max-w-112.5 -translate-x-1/2 bg-white shadow-[0_-8px_20px_rgba(18,18,23,0.1)] ${
-        isEditForm ? 'rounded-tl-[20px] rounded-tr-[30px] pt-[15px]' : 'rounded-t-[28px] pt-7'
+        isFormMode ? 'rounded-tl-[20px] rounded-tr-[30px] pt-[15px]' : 'rounded-t-[28px] pt-7'
       }`}
     >
       <div className="px-6 pb-4">
-        {isEditForm ? (
+        {isFormMode ? (
           <div className="mb-1 flex items-center justify-between gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-4">
               <button
@@ -162,6 +192,10 @@ export default function BottomSheet({
                 aria-label="뒤로"
                 onClick={() => {
                   setSelectedEditRowIndex(null);
+                  if (isAddingForm) {
+                    setIsAddingForm(false);
+                    return;
+                  }
                   backToEditList();
                 }}
                 className="-ml-1 flex size-[25px] shrink-0 items-center justify-center rounded-[8.5px] bg-[#F0F2F5] text-[20px] font-bold leading-none text-[#706963]"
@@ -234,11 +268,11 @@ export default function BottomSheet({
         )}
       </div>
 
-      {!isEditForm ? (
+      {!isFormMode ? (
         <div className="mx-auto w-[88%] border-t-[0.5px] border-[#A49F9B] opacity-50" />
       ) : null}
 
-      {isEditForm ? (
+      {isFormMode ? (
         <CalenderEdit
           title={formDraft.label}
           location={formDraft.location}
@@ -331,7 +365,7 @@ export default function BottomSheet({
         </div>
       )}
 
-      <div className={`px-6 pb-6 ${isEditForm ? 'pt-3' : 'pt-8'}`}>
+      <div className={`px-6 pb-6 ${isFormMode ? 'pt-3' : 'pt-8'}`}>
         {deleteMode ? (
           <>
             <button
@@ -349,13 +383,13 @@ export default function BottomSheet({
               취소하기 / 돌아가기
             </button>
           </>
-        ) : isEditForm ? (
+        ) : isFormMode ? (
           <>
             <Button
               backgroundColor={saveEditDisabled ? '#B9B2A6' : '#FFC721'}
               textColor="#FFFCF9"
               disabled={saveEditDisabled}
-              onClick={() => handleSaveEdit()}
+              onClick={() => handleSaveForm()}
               className="rounded-[10px] font-semibold"
             >
               추가 일정 저장하기
@@ -404,7 +438,7 @@ export default function BottomSheet({
           <>
             <button
               type="button"
-              onClick={onAddSchedule}
+              onClick={openAddScheduleForm}
               className="h-14 w-full rounded-xl bg-[#FFC721] text-[18px] font-semibold leading-none text-white"
             >
               일정 추가하기
