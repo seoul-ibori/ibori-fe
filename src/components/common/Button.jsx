@@ -11,7 +11,7 @@ export default function Button({
     <button
       type={type}
       disabled={disabled}
-      className={`h-14 w-full rounded-xl text-[18px] font-semibold leading-none transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`flex w-full min-h-[54px] items-center justify-center rounded-xl px-5 py-[15px] text-[18px] font-semibold leading-[1.6] transition-colors disabled:cursor-not-allowed ${className}`}
       style={{ backgroundColor, color: textColor }}
       {...rest}
     >

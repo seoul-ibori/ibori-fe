@@ -120,12 +120,28 @@ export default function BottomSheet({
     </div>
   );
 
+  const editFormHeaderDateBlock = (
+    <div className="mt-[10px] flex items-center gap-4">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+        <CalendarIcon className="size-10" />
+      </div>
+      <div>
+        <p className="mt-[4px] text-[16px] font-medium leading-none text-[#706963]">2026년</p>
+        <p className="mt-1 text-[18px] font-bold leading-none text-black">{selectedLabel}</p>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-112.5 -translate-x-1/2 rounded-t-[28px] bg-white pt-7 shadow-[0_-8px_20px_rgba(18,18,23,0.1)]">
+    <div
+      className={`fixed bottom-0 left-1/2 z-50 w-full max-w-112.5 -translate-x-1/2 bg-white shadow-[0_-8px_20px_rgba(18,18,23,0.1)] ${
+        isEditForm ? 'rounded-tl-[20px] rounded-tr-[30px] pt-[15px]' : 'rounded-t-[28px] pt-7'
+      }`}
+    >
       <div className="px-6 pb-4">
         {isEditForm ? (
-          <div className="mb-2 flex items-start justify-between gap-2">
-            <div className="flex min-w-0 flex-1 items-start gap-1">
+          <div className="mb-1 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-4">
               <button
                 type="button"
                 aria-label="뒤로"
@@ -133,16 +149,18 @@ export default function BottomSheet({
                   setSelectedEditRowIndex(null);
                   backToEditList();
                 }}
-                className="mt-2 flex size-10 shrink-0 items-center justify-center rounded-xl text-[28px] font-bold leading-none text-[#0B1324]"
+                className="-ml-1 flex size-[25px] shrink-0 items-center justify-center rounded-[8.5px] bg-[#F0F2F5] text-[20px] font-bold leading-none text-[#706963]"
               >
                 ‹
               </button>
-              <div className="min-w-0 flex-1">{headerDateBlock}</div>
+              <div className="min-w-0 flex-1">{editFormHeaderDateBlock}</div>
             </div>
-            <div className="flex shrink-0 items-center gap-3 pt-1">
-              <span className="text-[15px] font-bold text-[#AB4C0A]">수정모드</span>
-              <div className="flex size-9 items-center justify-center rounded-xl bg-[#AB4C0A]">
-                <PencilIcon className="size-4 [&_path]:fill-[#FFC721]" />
+            <div className="flex shrink-0 items-center gap-3">
+              <span className="text-[18px] font-medium tracking-[-0.45px] text-[#AB4C0A]">
+                수정모드
+              </span>
+              <div className="flex size-[25px] items-center justify-center rounded-md bg-[#AB4C0A]">
+                <PencilIcon className="size-3 [&_path]:fill-[#FFC721]" />
               </div>
             </div>
           </div>
@@ -203,7 +221,9 @@ export default function BottomSheet({
         )}
       </div>
 
-      <div className="mx-auto w-[88%] border-t-[0.5px] border-[#A49F9B] opacity-50" />
+      {!isEditForm ? (
+        <div className="mx-auto w-[88%] border-t-[0.5px] border-[#A49F9B] opacity-50" />
+      ) : null}
 
       {isEditForm ? (
         <CalenderEdit
@@ -298,7 +318,7 @@ export default function BottomSheet({
         </div>
       )}
 
-      <div className="px-6 pb-6 pt-8">
+      <div className={`px-6 pb-6 ${isEditForm ? 'pt-3' : 'pt-8'}`}>
         {deleteMode ? (
           <>
             <button
@@ -318,22 +338,21 @@ export default function BottomSheet({
           </>
         ) : isEditForm ? (
           <>
-            <button
-              type="button"
+            <Button
+              backgroundColor={saveEditDisabled ? '#B9B2A6' : '#FFC721'}
+              textColor="#FFFCF9"
               disabled={saveEditDisabled}
               onClick={() => handleSaveEdit()}
-              className={`h-14 w-full rounded-xl text-[18px] font-semibold leading-none text-white ${
-                saveEditDisabled ? 'bg-[#D4CEC8]' : 'bg-[#FFC721]'
-              }`}
+              className="rounded-[10px] font-semibold"
             >
               추가 일정 저장하기
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => exitEditModesFully()}
-              className="mt-4 w-full text-center text-[15px] font-medium leading-none text-[#C8BFB7]"
+              className="mt-3 w-full text-center text-[15px] font-medium leading-normal text-[#B9B2A6]"
             >
-              취소하기 / 돌아가기
+              취소하기/ 돌아가기
             </button>
           </>
         ) : isEditList ? (

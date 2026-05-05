@@ -8,67 +8,75 @@ export default function CalenderEdit({
   onMemoChange,
   onTimeChange,
 }) {
+  const fieldClass =
+    'w-full bg-transparent py-2 text-[18px] leading-[28px] outline-none ring-0 border-0 rounded-none';
+
   return (
-    <div className="px-6 pb-2 pt-1">
-      <h2 className="text-[18px] font-bold leading-none text-black">일정 수정하기</h2>
-      <p className="mt-3 text-[15px] font-medium leading-none text-[#B7ADA5]">
-        정보를 작성해주세요
-      </p>
-
-      <div className="mt-5">
-        <label htmlFor="calendar-edit-time" className="sr-only">
-          시간
-        </label>
-        <input
-          id="calendar-edit-time"
-          type="text"
-          value={timeDisplay}
-          onChange={(e) => onTimeChange(e.target.value)}
-          className="inline-block min-w-[120px] rounded-full border-0 bg-[#FFC721] px-5 py-2.5 text-center text-[15px] font-bold leading-none text-[#773C14] outline-none ring-0 placeholder:text-[#773C14]/60"
-          placeholder="오후 12:00"
-          autoComplete="off"
-        />
-      </div>
-
-      <div className="mt-6 space-y-5">
-        <div>
-          <label htmlFor="calendar-edit-title" className="sr-only">
-            일정 이름
-          </label>
-          <input
-            id="calendar-edit-title"
-            type="text"
-            value={title}
-            onChange={(e) => onTitleChange(e.target.value)}
-            className="h-14 w-full rounded-xl border border-[#E8E4DF] bg-white px-4 text-[16px] font-medium text-[#252525] outline-none placeholder:text-[#C8BFB7]"
-            placeholder="일정 이름"
-          />
+    <div className="px-6 pb-4 pt-1">
+      <div className="border-t-[0.2px] border-[#CFD2DA]/80 pt-5">
+        <div className="flex flex-col gap-3">
+          <div className="space-y-[5px]">
+            <p className="text-[15px] font-medium leading-normal text-[#706963]">일정 수정하기</p>
+            <p className="text-[18px] font-bold leading-normal text-black">정보를 작성해주세요</p>
+          </div>
+          <div className="mt-0.5 border-t-[0.2px] border-[#CFD2DA]/80" aria-hidden />
+          <div className="flex justify-end">
+            <label htmlFor="calendar-edit-time" className="sr-only">
+              시간
+            </label>
+            <input
+              id="calendar-edit-time"
+              type="text"
+              value={timeDisplay}
+              onChange={(e) => onTimeChange(e.target.value)}
+              className="h-[33px] min-w-0 rounded-full border-0 bg-[#FFC721] px-5 py-[7px] text-center text-[15px] font-medium leading-[28px] tracking-tighter text-white outline-none placeholder:text-white/75 [field-sizing:content]"
+              placeholder="오후 12:00"
+              autoComplete="off"
+            />
+          </div>
         </div>
-        <div>
-          <label htmlFor="calendar-edit-location" className="sr-only">
-            장소
-          </label>
-          <input
-            id="calendar-edit-location"
-            type="text"
-            value={location}
-            onChange={(e) => onLocationChange(e.target.value)}
-            className="h-14 w-full rounded-xl border border-[#E8E4DF] bg-white px-4 text-[16px] font-medium text-[#252525] outline-none placeholder:text-[#C8BFB7]"
-            placeholder="장소"
-          />
-        </div>
-        <div>
-          <label htmlFor="calendar-edit-memo" className="sr-only">
-            메모
-          </label>
-          <textarea
-            id="calendar-edit-memo"
-            value={memo}
-            onChange={(e) => onMemoChange(e.target.value)}
-            rows={4}
-            className="w-full resize-none rounded-xl border border-[#E8E4DF] bg-white px-4 py-3 text-[16px] font-medium text-[#252525] outline-none placeholder:text-[#C8BFB7]"
-            placeholder="메모를 작성해주세요"
-          />
+        <div className="my-1" aria-hidden />
+
+        <div className="space-y-0">
+          <div className="border-b-[0.2px] border-[#CFD2DA]/80">
+            <label htmlFor="calendar-edit-title" className="sr-only">
+              일정 제목을 입력해주세요
+            </label>
+            <input
+              id="calendar-edit-title"
+              type="text"
+              value={title}
+              onChange={(e) => onTitleChange(e.target.value)}
+              className={`${fieldClass} font-medium text-[#706963] placeholder:font-medium placeholder:text-[#A8A19A]`}
+              placeholder="일정 제목을 입력해주세요"
+            />
+          </div>
+          <div className="border-b-[0.2px] border-[#CFD2DA]/80">
+            <label htmlFor="calendar-edit-location" className="sr-only">
+              병원 위치를 입력해주세요
+            </label>
+            <input
+              id="calendar-edit-location"
+              type="text"
+              value={location}
+              onChange={(e) => onLocationChange(e.target.value)}
+              className={`${fieldClass} font-medium text-[#706963] placeholder:font-medium placeholder:text-[#A8A19A]`}
+              placeholder="병원 위치를 입력해주세요"
+            />
+          </div>
+          <div className="border-b-[0.2px] border-[#CFD2DA]/80">
+            <label htmlFor="calendar-edit-memo" className="sr-only">
+              메모를 작성해주세요
+            </label>
+            <textarea
+              id="calendar-edit-memo"
+              value={memo}
+              onChange={(e) => onMemoChange(e.target.value)}
+              rows={1}
+              className={`${fieldClass} min-h-[27px] resize-none pb-1 pt-2 font-medium text-[#706963] placeholder:font-medium placeholder:text-[#A8A19A]`}
+              placeholder="메모를 작성해주세요"
+            />
+          </div>
         </div>
       </div>
     </div>
