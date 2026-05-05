@@ -1,3 +1,5 @@
+import CalenderDateEdit from '@/components/Summary/CalenderDateEdit';
+
 export default function CalenderEdit({
   title,
   location,
@@ -20,20 +22,7 @@ export default function CalenderEdit({
             <p className="text-[18px] font-bold leading-normal text-black">정보를 작성해주세요</p>
           </div>
           <div className="mt-0.5 border-t-[0.2px] border-[#CFD2DA]/80" aria-hidden />
-          <div className="flex justify-end">
-            <label htmlFor="calendar-edit-time" className="sr-only">
-              시간
-            </label>
-            <input
-              id="calendar-edit-time"
-              type="text"
-              value={timeDisplay}
-              onChange={(e) => onTimeChange(e.target.value)}
-              className="h-[33px] min-w-0 rounded-full border-0 bg-[#FFC721] px-5 py-[7px] text-center text-[15px] font-medium leading-[28px] tracking-tighter text-white outline-none placeholder:text-white/75 [field-sizing:content]"
-              placeholder="오후 12:00"
-              autoComplete="off"
-            />
-          </div>
+          <CalenderDateEdit timeDisplay={timeDisplay} onTimeChange={onTimeChange} />
         </div>
         <div className="my-1" aria-hidden />
 

@@ -25,6 +25,21 @@ function EventRow({ title, time, trailing }) {
   );
 }
 
+function formatKoreanMeridiemTime(value) {
+  if (!value) return '오전 10:30';
+  const already = value.match(/^(오전|오후)\s*\d{1,2}:\d{2}$/);
+  if (already) return value;
+
+  const hhmm = value.match(/^(\d{1,2}):(\d{2})$/);
+  if (!hhmm) return value;
+
+  const hour24 = Math.min(23, Math.max(0, Number(hhmm[1])));
+  const minute = Math.min(59, Math.max(0, Number(hhmm[2])));
+  const meridiem = hour24 < 12 ? '오전' : '오후';
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  return `${meridiem} ${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
 export default function BottomSheet({
   isOpen,
   selectedLabel,
@@ -93,7 +108,7 @@ export default function BottomSheet({
         label: formDraft.label.trim(),
         location: formDraft.location,
         memo: formDraft.memo,
-        time: formDraft.time,
+        time: formatKoreanMeridiemTime(formDraft.time),
         color: formDraft.color ?? e.color,
       };
     });
@@ -156,9 +171,7 @@ export default function BottomSheet({
               <div className="min-w-0 flex-1">{editFormHeaderDateBlock}</div>
             </div>
             <div className="flex shrink-0 items-center gap-3">
-              <span className="text-[18px] font-medium tracking-[-0.45px] text-[#AB4C0A]">
-                수정모드
-              </span>
+              <span className="text-[15px] font-bold text-[#AB4C0A]">수정모드</span>
               <div className="flex size-[25px] items-center justify-center rounded-md bg-[#AB4C0A]">
                 <PencilIcon className="size-3 [&_path]:fill-[#FFC721]" />
               </div>
