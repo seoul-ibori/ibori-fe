@@ -29,10 +29,9 @@ const router = createBrowserRouter([
     ],
   },
   {
-    path: '/auth',
     Component: ServiceLayout,
     children: [
-      //{ index: true, lazy: page(() => import("파일 경로")) },
+      { path: '/login', lazy: page(() => import('@/pages/Auth/SingnIn')) },
       //{ path: "", lazy: page(() => import("파일 경로")) },
     ],
   },
