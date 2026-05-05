@@ -1,16 +1,36 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import MicrophoneIcon from '@/assets/icons/summary/microphone.svg?react';
 import BottomSheet from '@/components/Summary/BottomSheet';
 import { CELLS, WEEK_DAYS } from '@/constants/calenderDummyData';
 
-export default function Calendar() {
-  const initialSelectedIndex = useMemo(() => CELLS.findIndex((cell) => cell.selected), []);
-  const [selectedIndex, setSelectedIndex] = useState(
-    initialSelectedIndex >= 0 ? initialSelectedIndex : null
-  );
+function cloneCells(source) {
+  return source.map((cell) => ({
+    ...cell,
+    events: cell.events?.map((e) => ({ ...e })),
+  }));
+}
 
-  const selectedCell = selectedIndex !== null ? CELLS[selectedIndex] : null;
+export default function Calendar() {
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const [cells, setCells] = useState(() => cloneCells(CELLS));
+
+  const selectedCell = selectedIndex !== null ? cells[selectedIndex] : null;
+
+  const handleSaveDayEvents = useCallback(
+    (nextEvents) => {
+      if (selectedIndex === null) return;
+      setCells((prev) => {
+        const copy = [...prev];
+        copy[selectedIndex] = {
+          ...copy[selectedIndex],
+          events: nextEvents.length > 0 ? nextEvents.map((e) => ({ ...e })) : undefined,
+        };
+        return copy;
+      });
+    },
+    [selectedIndex]
+  );
   const selectedWeekDay = selectedIndex !== null ? WEEK_DAYS[selectedIndex % 7]?.label : '';
 
   return (
@@ -55,19 +75,17 @@ export default function Calendar() {
           </div>
         ))}
 
-        {CELLS.map((cell, index) => (
+        {cells.map((cell, index) => (
           <button
             type="button"
             key={`${cell.day}-${index}`}
             onClick={() => setSelectedIndex(index)}
-            className={`px-[2px] py-[2px] ${
-              selectedIndex === index
-                ? 'h-[84px] overflow-hidden rounded border border-[#FFC721]'
-                : 'h-[81px]'
+            className={`box-border flex h-[81px] flex-col overflow-hidden px-[2px] py-[2px] ${
+              selectedIndex === index ? 'rounded border border-[#FFC721]' : ''
             }`}
           >
             <div
-              className={`mb-0.5 flex h-6 items-center justify-center text-[10px] font-bold leading-none ${
+              className={`flex h-6 shrink-0 items-center justify-center text-[10px] font-bold leading-none ${
                 cell.muted ? 'text-[#252525]/50' : 'text-[#252525]'
               }`}
             >
@@ -79,7 +97,7 @@ export default function Calendar() {
                 cell.day
               )}
             </div>
-            <div className="space-y-0.5">
+            <div className="min-h-0 flex-1 space-y-0.5 overflow-hidden">
               {cell.events?.map((event) => (
                 <div
                   key={event.label}
@@ -111,10 +129,16 @@ export default function Calendar() {
       )}
 
       <BottomSheet
+        key={
+          selectedCell != null && selectedIndex !== null
+            ? `${selectedCell.day}-${selectedIndex}`
+            : 'sheet-closed'
+        }
         isOpen={selectedIndex !== null}
         selectedLabel={selectedCell ? `4월 ${selectedCell.day}일 ${selectedWeekDay}요일` : ''}
         events={selectedCell?.events ?? []}
         onClose={() => setSelectedIndex(null)}
+        onSaveEvents={handleSaveDayEvents}
       />
     </section>
   );

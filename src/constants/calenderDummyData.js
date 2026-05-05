@@ -24,7 +24,13 @@ export const CELLS = [
     day: 10,
     selected: true,
     events: [
-      { label: '민준 예방접종', color: 'bg-[#5AA7FF]' },
+      {
+        label: '민준 예방접종',
+        color: 'bg-[#5AA7FF]',
+        location: '서울시청 부속의원',
+        memo: '',
+        time: '오후 12:00',
+      },
       { label: '하나 진단서 발급', color: 'bg-[#FF8763]' },
       { label: '지원 소아과 방문', color: 'bg-[#FFC721]' },
     ],
