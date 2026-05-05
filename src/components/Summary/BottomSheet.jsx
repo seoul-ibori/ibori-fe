@@ -6,6 +6,7 @@ import PencilIcon from '@/assets/icons/pencil.svg?react';
 import TrashIcon from '@/assets/icons/trash.svg?react';
 import { SwipeableEventRow } from '@/components/Summary/CalendarDelete';
 import CalenderEdit from '@/components/Summary/CalenderEdit';
+import CalenderForm from '@/components/Summary/CalenderForm';
 import Button from '@/components/common/Button';
 import { useCalendarDelete } from '@/hooks/useCalendarDelete';
 import { normalizeEventForEdit, useCalendarEdit } from '@/hooks/useCalendarEdit';
@@ -72,10 +73,12 @@ export default function BottomSheet({
 
   const [selectedEditRowIndex, setSelectedEditRowIndex] = useState(null);
   const [isAddingForm, setIsAddingForm] = useState(false);
+  const [expandedRowKey, setExpandedRowKey] = useState(null);
 
   const exitEditModesFully = useCallback(() => {
     setSelectedEditRowIndex(null);
     setIsAddingForm(false);
+    setExpandedRowKey(null);
     exitEditModes();
   }, [exitEditModes]);
 
@@ -147,7 +150,6 @@ export default function BottomSheet({
 
   if (!isOpen) return null;
 
-  const trailingNormal = <DownArrowIcon className="size-[12px]" />;
   const isEditForm = editPhase === 'form';
   const isFormMode = isEditForm || isAddingForm;
   const isEditList = editPhase === 'list';
@@ -352,7 +354,36 @@ export default function BottomSheet({
                       />
                     </div>
                   ) : (
-                    <EventRow title={event.label} time={rowTime} trailing={trailingNormal} />
+                    <>
+                      <EventRow
+                        title={event.label}
+                        time={rowTime}
+                        trailing={
+                          <button
+                            type="button"
+                            aria-label={`${event.label} 상세 토글`}
+                            onClick={() =>
+                              setExpandedRowKey((prev) => (prev === rowKey ? null : rowKey))
+                            }
+                            className="flex size-8 items-center justify-center"
+                          >
+                            <DownArrowIcon
+                              className={`size-[12px] transition-transform ${
+                                expandedRowKey === rowKey ? 'rotate-180' : ''
+                              }`}
+                            />
+                          </button>
+                        }
+                      />
+                      {expandedRowKey === rowKey ? (
+                        <CalenderForm
+                          label={event.label}
+                          time={rowTime}
+                          location={event.location}
+                          memo={event.memo}
+                        />
+                      ) : null}
+                    </>
                   )}
                 </div>
               );
