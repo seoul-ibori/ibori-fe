@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import AppLogoIcon from '@/assets/icons/app_logo_icon.svg?react';
-import LogoIcon from '@/assets/icons/main/logo_icon.svg?react';
+import LogoIcon from '@/assets/icons/logo_big_icon.svg?react';
 import Button from '@/components/common/Button';
 
 export default function SignIn() {
@@ -23,7 +23,7 @@ export default function SignIn() {
             <div className="flex size-20.25 items-center justify-center overflow-hidden rounded-[10.832px] bg-[#FFC721]">
               <AppLogoIcon className="size-13" />
             </div>
-            <LogoIcon className="w-38.75" />
+            <LogoIcon />
           </div>
           <div className="text-center text-[18px] leading-[29px] text-[#7D7D7D]">
             <p className="font-medium">시작하려면</p>
@@ -49,10 +49,16 @@ export default function SignIn() {
             />
           </div>
           <div className="flex w-full flex-col items-center gap-6">
-            <Button type="submit">로그인 하기</Button>
+            <Button type="submit" pressedBgColor="#E28702" pressedTextColor="#F5DF7A">
+              로그인 하기
+            </Button>
             <p className="text-[15px] font-medium text-[#7D7D7D]">
               계정이 없으신가요?{' '}
-              <button type="button" onClick={() => navigate('/signup')} className="font-semibold">
+              <button
+                type="button"
+                onClick={() => navigate('/signup-select')}
+                className="font-semibold"
+              >
                 회원가입하기
               </button>
             </p>
