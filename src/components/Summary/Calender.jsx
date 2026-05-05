@@ -1,13 +1,36 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import MicrophoneIcon from '@/assets/icons/summary/microphone.svg?react';
 import BottomSheet from '@/components/Summary/BottomSheet';
 import { CELLS, WEEK_DAYS } from '@/constants/calenderDummyData';
 
+function cloneCells(source) {
+  return source.map((cell) => ({
+    ...cell,
+    events: cell.events?.map((e) => ({ ...e })),
+  }));
+}
+
 export default function Calendar() {
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const [cells, setCells] = useState(() => cloneCells(CELLS));
 
-  const selectedCell = selectedIndex !== null ? CELLS[selectedIndex] : null;
+  const selectedCell = selectedIndex !== null ? cells[selectedIndex] : null;
+
+  const handleSaveDayEvents = useCallback(
+    (nextEvents) => {
+      if (selectedIndex === null) return;
+      setCells((prev) => {
+        const copy = [...prev];
+        copy[selectedIndex] = {
+          ...copy[selectedIndex],
+          events: nextEvents.length > 0 ? nextEvents.map((e) => ({ ...e })) : undefined,
+        };
+        return copy;
+      });
+    },
+    [selectedIndex]
+  );
   const selectedWeekDay = selectedIndex !== null ? WEEK_DAYS[selectedIndex % 7]?.label : '';
 
   return (
@@ -52,7 +75,7 @@ export default function Calendar() {
           </div>
         ))}
 
-        {CELLS.map((cell, index) => (
+        {cells.map((cell, index) => (
           <button
             type="button"
             key={`${cell.day}-${index}`}
@@ -106,10 +129,16 @@ export default function Calendar() {
       )}
 
       <BottomSheet
+        key={
+          selectedCell != null && selectedIndex !== null
+            ? `${selectedCell.day}-${selectedIndex}`
+            : 'sheet-closed'
+        }
         isOpen={selectedIndex !== null}
         selectedLabel={selectedCell ? `4월 ${selectedCell.day}일 ${selectedWeekDay}요일` : ''}
         events={selectedCell?.events ?? []}
         onClose={() => setSelectedIndex(null)}
+        onSaveEvents={handleSaveDayEvents}
       />
     </section>
   );
