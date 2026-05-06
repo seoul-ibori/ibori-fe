@@ -19,7 +19,14 @@ function Spinner({ className }) {
   );
 }
 
-export default function CreateQuestionModal({ onClose }) {
+export default function CreateQuestionModal({
+  onClose,
+  title = '잠시만 기다려 주세요\n지금 AI가 질문지를 만들고 있어요',
+  description = '증상과 함께 생활 환경 데이터를 반영해\n질문을 구성하고 있는 중이에요',
+}) {
+  const titleLines = String(title).split('\n');
+  const descriptionLines = String(description).split('\n');
+
   return (
     <div className="w-full max-w-[341px] overflow-hidden rounded-[23px] bg-white">
       <div className="px-5.5 pt-4.75">
@@ -34,14 +41,22 @@ export default function CreateQuestionModal({ onClose }) {
         <Spinner className="size-11.75" />
         <div className="flex flex-col gap-2.5 text-center">
           <p className="text-[18px] leading-7 font-bold text-[#1D1B1A]">
-            잠시만 기다려 주세요
-            <br />
-            지금 AI가 질문지를 만들고 있어요
+            {titleLines[0]}
+            {titleLines[1] ? (
+              <>
+                <br />
+                {titleLines[1]}
+              </>
+            ) : null}
           </p>
           <p className="text-sm leading-[1.541] font-medium text-[#B9B2A6]">
-            증상과 함께 생활 환경 데이터를 반영해
-            <br />
-            질문을 구성하고 있는 중이에요
+            {descriptionLines[0]}
+            {descriptionLines[1] ? (
+              <>
+                <br />
+                {descriptionLines[1]}
+              </>
+            ) : null}
           </p>
         </div>
       </div>

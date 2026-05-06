@@ -183,7 +183,6 @@ export default function Calendar() {
           setIsRecordOpen(false);
           setIsVoiceChildSelectOpen(true);
         }}
-        onClose={() => setIsRecordOpen(false)}
       />
     </section>
   );
