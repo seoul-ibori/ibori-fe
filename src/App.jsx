@@ -35,6 +35,7 @@ const router = createBrowserRouter([
       { path: '/signup', lazy: page(() => import('@/pages/Auth/SignUp')) },
       { path: '/signup-select', lazy: page(() => import('@/pages/Auth/SIgnUpSelect')) },
       { path: '/introduce', lazy: page(() => import('@/pages/Main/ServiceIntroduce')) },
+      { path: '/create-question', lazy: page(() => import('@/pages/Question/CreateQuestion')) },
       //{ path: "", lazy: page(() => import("파일 경로")) },
     ],
   },
