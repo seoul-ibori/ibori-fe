@@ -20,7 +20,6 @@ export default function SignUp() {
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [familyPassword, setFamilyPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
 
   const allFilled = Boolean(name && userId && password && passwordConfirm && familyPassword);
   const passwordMatch = Boolean(password && passwordConfirm && password === passwordConfirm);
@@ -64,7 +63,6 @@ export default function SignUp() {
                 className={`${inputClass} pr-16`}
               />
               <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-2">
-                {passwordMatch && <CheckYellowIcon className="size-6" />}
                 <button
                   type="button"
                   aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 표시'}
@@ -82,7 +80,7 @@ export default function SignUp() {
 
             <div className="relative">
               <input
-                type={showPasswordConfirm ? 'text' : 'password'}
+                type="password"
                 value={passwordConfirm}
                 onChange={(e) => setPasswordConfirm(e.target.value)}
                 placeholder="비밀번호 확인"
@@ -90,18 +88,6 @@ export default function SignUp() {
               />
               <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-2">
                 {passwordMatch && <CheckYellowIcon className="size-6" />}
-                <button
-                  type="button"
-                  aria-label={showPasswordConfirm ? '비밀번호 숨기기' : '비밀번호 표시'}
-                  onClick={() => setShowPasswordConfirm((p) => !p)}
-                  className="flex items-center justify-center"
-                >
-                  {showPasswordConfirm ? (
-                    <EyeOpenIcon className="size-5" />
-                  ) : (
-                    <EyeCloseIcon className="size-5" />
-                  )}
-                </button>
               </div>
             </div>
 
