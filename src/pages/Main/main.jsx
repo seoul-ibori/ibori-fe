@@ -49,7 +49,7 @@ const AISection = () => (
 );
 
 export default function Main() {
-  const isLoggedIn = true; //Boolean(TokenManager.getAccessToken());
+  const isLoggedIn = false; //Boolean(TokenManager.getAccessToken());
 
   if (!isLoggedIn) {
     return (

@@ -1,8 +1,11 @@
+import { useNavigate } from 'react-router-dom';
+
 import FamilyIcon from '@/assets/icons/main/family_icon.svg?react';
 import PlusBrownIcon from '@/assets/icons/main/plus_brown_icon.svg?react';
 import familyBackgroundImg from '@/assets/images/main/family_background_img.png';
 
 export default function MainPost() {
+  const navigate = useNavigate();
   return (
     <article className="relative overflow-hidden rounded-[35px] border border-[#FAF7F2] bg-white shadow-[0_1px_6px_rgba(226,135,2,0.15)]">
       <img
@@ -28,6 +31,7 @@ export default function MainPost() {
         <button
           type="button"
           className="mt-2 flex items-center gap-px self-end text-base font-medium text-[#5F3010]"
+          onClick={() => navigate('/introduce')}
         >
           보러가기
           <PlusBrownIcon className="size-4.75" />
