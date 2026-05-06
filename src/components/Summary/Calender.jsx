@@ -2,6 +2,9 @@ import { useCallback, useState } from 'react';
 
 import MicrophoneIcon from '@/assets/icons/summary/microphone.svg?react';
 import BottomSheet from '@/components/Summary/BottomSheet';
+import Record from '@/components/Summary/Record';
+import VoiceChildSelectScreen from '@/components/Summary/VoiceChildSelectScreen';
+import Modal from '@/components/common/Modal';
 import { CELLS, WEEK_DAYS } from '@/constants/calenderDummyData';
 
 function cloneCells(source) {
@@ -14,6 +17,10 @@ function cloneCells(source) {
 export default function Calendar() {
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [cells, setCells] = useState(() => cloneCells(CELLS));
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [isVoiceChildSelectOpen, setIsVoiceChildSelectOpen] = useState(false);
+  const [isRecordOpen, setIsRecordOpen] = useState(false);
+  const [selectedVoiceChild, setSelectedVoiceChild] = useState(null);
 
   const selectedCell = selectedIndex !== null ? cells[selectedIndex] : null;
 
@@ -114,9 +121,20 @@ export default function Calendar() {
       <button
         type="button"
         aria-label="음성 입력"
-        className="absolute bottom-[22px] right-6 flex size-[68px] items-center justify-center rounded-full bg-[#FFC722] text-[30px] text-white shadow-[0_4px_6px_rgba(18,18,23,0.2)]"
+        onClick={() => setIsVoiceModalOpen(true)}
+        className={`absolute bottom-[22px] right-6 z-30 flex size-[68px] items-center justify-center rounded-full text-[30px] text-white shadow-[0_4px_6px_rgba(18,18,23,0.2)] ${
+          isVoiceModalOpen || isVoiceChildSelectOpen || isRecordOpen
+            ? 'bg-[#E28906]'
+            : 'bg-[#FFC722]'
+        }`}
       >
-        <MicrophoneIcon className="size-10" />
+        <MicrophoneIcon
+          className={`size-10 ${
+            isVoiceModalOpen || isVoiceChildSelectOpen || isRecordOpen
+              ? '[&_rect]:fill-[#E28906]'
+              : '[&_rect]:fill-[#FFC722]'
+          }`}
+        />
       </button>
 
       {selectedIndex !== null && (
@@ -139,6 +157,33 @@ export default function Calendar() {
         events={selectedCell?.events ?? []}
         onClose={() => setSelectedIndex(null)}
         onSaveEvents={handleSaveDayEvents}
+      />
+
+      <Modal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        onAgree={() => setIsVoiceChildSelectOpen(true)}
+      />
+
+      <VoiceChildSelectScreen
+        isOpen={isVoiceChildSelectOpen}
+        onClose={() => setIsVoiceChildSelectOpen(false)}
+        onConfirm={(child) => {
+          if (!child) return;
+          setSelectedVoiceChild(child);
+          setIsVoiceChildSelectOpen(false);
+          setIsRecordOpen(true);
+        }}
+      />
+
+      <Record
+        isOpen={isRecordOpen}
+        childName={selectedVoiceChild?.name ?? ''}
+        onBack={() => {
+          setIsRecordOpen(false);
+          setIsVoiceChildSelectOpen(true);
+        }}
+        onClose={() => setIsRecordOpen(false)}
       />
     </section>
   );
