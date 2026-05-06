@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 
 import MicrophoneIcon from '@/assets/icons/summary/microphone.svg?react';
 import BottomSheet from '@/components/Summary/BottomSheet';
+import Modal from '@/components/common/Modal';
 import { CELLS, WEEK_DAYS } from '@/constants/calenderDummyData';
 
 function cloneCells(source) {
@@ -14,6 +15,7 @@ function cloneCells(source) {
 export default function Calendar() {
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [cells, setCells] = useState(() => cloneCells(CELLS));
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
 
   const selectedCell = selectedIndex !== null ? cells[selectedIndex] : null;
 
@@ -114,9 +116,14 @@ export default function Calendar() {
       <button
         type="button"
         aria-label="음성 입력"
-        className="absolute bottom-[22px] right-6 flex size-[68px] items-center justify-center rounded-full bg-[#FFC722] text-[30px] text-white shadow-[0_4px_6px_rgba(18,18,23,0.2)]"
+        onClick={() => setIsVoiceModalOpen(true)}
+        className={`absolute bottom-[22px] right-6 z-30 flex size-[68px] items-center justify-center rounded-full text-[30px] text-white shadow-[0_4px_6px_rgba(18,18,23,0.2)] ${
+          isVoiceModalOpen ? 'bg-[#E28906]' : 'bg-[#FFC722]'
+        }`}
       >
-        <MicrophoneIcon className="size-10" />
+        <MicrophoneIcon
+          className={`size-10 ${isVoiceModalOpen ? '[&_rect]:fill-[#E28906]' : '[&_rect]:fill-[#FFC722]'}`}
+        />
       </button>
 
       {selectedIndex !== null && (
@@ -140,6 +147,8 @@ export default function Calendar() {
         onClose={() => setSelectedIndex(null)}
         onSaveEvents={handleSaveDayEvents}
       />
+
+      <Modal isOpen={isVoiceModalOpen} onClose={() => setIsVoiceModalOpen(false)} />
     </section>
   );
 }
