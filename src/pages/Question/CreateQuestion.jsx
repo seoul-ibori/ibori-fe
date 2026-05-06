@@ -86,6 +86,10 @@ export default function CreateQuestion() {
   const handleSubmit = () => {
     setModalContent(<CreateQuestionModal onClose={() => setIsModalOpen(false)} />);
     setIsModalOpen(true);
+    setTimeout(() => {
+      setIsModalOpen(false);
+      navigate('/question-list');
+    }, 3000);
   };
 
   return (
