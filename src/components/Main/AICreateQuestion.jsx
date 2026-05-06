@@ -1,11 +1,15 @@
+import { useNavigate } from 'react-router-dom';
+
 import hospitalBackgroundImg from '@/assets/images/main/hospital_background_image.png';
 import HospitalImage from '@/assets/images/main/hospital_image.svg?react';
 
 export default function AICreateQuestion() {
+  const navigate = useNavigate();
   return (
     <button
       type="button"
       className="relative w-full h-28.75 overflow-hidden rounded-[21px] bg-[#FFC721]"
+      onClick={() => navigate('/create-question')}
     >
       <img
         src={hospitalBackgroundImg}
