@@ -2,6 +2,7 @@ import { RouterProvider, createBrowserRouter } from 'react-router';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+import NotHeaderLayout from '@/layouts/NotHeaderLayout';
 import RootLayout from '@/layouts/RootLayout';
 import ServiceLayout from '@/layouts/ServiceLayout';
 import ProtectedRoute from '@/router/ProtectedRoute';
@@ -39,6 +40,10 @@ const router = createBrowserRouter([
       { path: '/question-list', lazy: page(() => import('@/pages/Question/QuestionList')) },
       //{ path: "", lazy: page(() => import("파일 경로")) },
     ],
+  },
+  {
+    Component: NotHeaderLayout,
+    children: [{ path: '/settings', lazy: page(() => import('@/pages/Setting/Settings')) }],
   },
 ]);
 
