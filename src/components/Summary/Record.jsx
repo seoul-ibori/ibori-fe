@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import MicrophoneIcon from '@/assets/icons/summary/microphone.svg?react';
 import CreateQuestionModal from '@/components/Question/CreateQuestionModal';
 import RecordStop from '@/components/Summary/RecordStop';
+import SummaryRecord from '@/components/Summary/SummaryRecord';
 import BackButtonIcon from '@/components/common/BackButtonIcon';
 
 const TOTAL_WAVE_BARS = 55;
@@ -64,10 +65,17 @@ function RecordingWave({ isRecording, waveHeights = [], cursorIndex = 0 }) {
   );
 }
 
-export default function Record({ isOpen, childName = '', onBack = () => {} }) {
+export default function Record({
+  isOpen,
+  childName = '',
+  childLabelColor = '#5AA7FF',
+  onBack = () => {},
+  onGoHome = () => {},
+}) {
   const [isRecording, setIsRecording] = useState(false);
   const [isStopped, setIsStopped] = useState(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [micError, setMicError] = useState('');
   const [waveHeights, setWaveHeights] = useState(() =>
@@ -83,6 +91,7 @@ export default function Record({ isOpen, childName = '', onBack = () => {} }) {
   const frameCountRef = useRef(0);
   const cursorIndexRef = useRef(0);
   const smoothedAmplitudeRef = useRef(0);
+  const summaryTimeoutRef = useRef(null);
 
   const stopMicrophone = () => {
     if (rafRef.current) {
@@ -101,6 +110,13 @@ export default function Record({ isOpen, childName = '', onBack = () => {} }) {
     dataArrayRef.current = null;
     frameCountRef.current = 0;
     smoothedAmplitudeRef.current = 0;
+  };
+
+  const clearSummaryTimeout = () => {
+    if (summaryTimeoutRef.current) {
+      window.clearTimeout(summaryTimeoutRef.current);
+      summaryTimeoutRef.current = null;
+    }
   };
 
   const animateWave = () => {
@@ -204,6 +220,7 @@ export default function Record({ isOpen, childName = '', onBack = () => {} }) {
   useEffect(
     () => () => {
       stopMicrophone();
+      clearSummaryTimeout();
     },
     []
   );
@@ -218,6 +235,9 @@ export default function Record({ isOpen, childName = '', onBack = () => {} }) {
     setWaveHeights(Array.from({ length: TOTAL_WAVE_BARS }, () => BASE_WAVE_HEIGHT));
     setCursorIndex(0);
     cursorIndexRef.current = 0;
+    setIsSummaryOpen(false);
+    setIsSummaryModalOpen(false);
+    clearSummaryTimeout();
     onBack();
   };
 
@@ -226,6 +246,11 @@ export default function Record({ isOpen, childName = '', onBack = () => {} }) {
     setIsRecording(false);
     setIsStopped(true);
     setIsSummaryModalOpen(true);
+    clearSummaryTimeout();
+    summaryTimeoutRef.current = window.setTimeout(() => {
+      setIsSummaryModalOpen(false);
+      setIsSummaryOpen(true);
+    }, 1300);
   };
 
   return (
@@ -358,11 +383,23 @@ export default function Record({ isOpen, childName = '', onBack = () => {} }) {
       {isSummaryModalOpen ? (
         <div className="absolute inset-0 z-[120] flex items-center justify-center bg-black/40 px-6">
           <CreateQuestionModal
-            onClose={() => setIsSummaryModalOpen(false)}
+            onClose={() => {
+              setIsSummaryModalOpen(false);
+              clearSummaryTimeout();
+            }}
             title={'잠시만 기다려 주세요\n지금 AI가 대화를 요약하고 있어요'}
             description={'녹음 내용은 제 3자에게 전달되지 않고\n요약 후 즉시 삭제돼요'}
           />
         </div>
+      ) : null}
+
+      {isSummaryOpen ? (
+        <SummaryRecord
+          childName={childName}
+          childLabelColor={childLabelColor}
+          onBack={() => setIsSummaryOpen(false)}
+          onGoHome={onGoHome}
+        />
       ) : null}
     </div>
   );

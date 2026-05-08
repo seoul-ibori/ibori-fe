@@ -179,9 +179,15 @@ export default function Calendar() {
       <Record
         isOpen={isRecordOpen}
         childName={selectedVoiceChild?.name ?? ''}
+        childLabelColor={selectedVoiceChild?.labelColor ?? '#5AA7FF'}
         onBack={() => {
           setIsRecordOpen(false);
           setIsVoiceChildSelectOpen(true);
+        }}
+        onGoHome={() => {
+          setIsRecordOpen(false);
+          setIsVoiceChildSelectOpen(false);
+          setIsVoiceModalOpen(false);
         }}
       />
     </section>
