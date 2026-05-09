@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router';
 
 import ChevronLeft from '@/assets/icons/arrow_left_icon.svg?react';
 import ChevronRight from '@/assets/icons/arrow_right_icon.svg?react';
 import DropDownIcon from '@/assets/icons/main/dropdown_icon.svg?react';
-import RetryIcon from '@/assets/icons/main/retry_button_icon.svg?react';
 import ChildrenBox from '@/components/Main/ChildrenBox';
 import MedicalRecord from '@/components/Main/MedicalRecord';
+import Button from '@/components/common/Button';
 
 const YEAR_RANGE = 10;
 
@@ -175,6 +176,7 @@ function parseRecordYearMonth(date) {
 }
 
 export default function WeeklyRecord({ childrenList = [], records = [] }) {
+  const navigate = useNavigate();
   const today = new Date();
   const [barOpen, setBarOpen] = useState(false);
   const [selectedChildId, setSelectedChildId] = useState(null);
@@ -210,24 +212,27 @@ export default function WeeklyRecord({ childrenList = [], records = [] }) {
           <p className="text-[15px] font-medium text-[#706963]">월간 일정 기록</p>
           <p className="text-[18px] font-bold text-black">이번 주 진료 기록 살펴요!</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            aria-label="새로고침"
-            className="flex size-7.5 items-center justify-center rounded-[8.557px] bg-[#FFC721]"
-          >
-            <RetryIcon />
-          </button>
-          <button
-            type="button"
-            onClick={handleAllClick}
-            className={`flex size-7.5 items-center justify-center rounded-[8.557px] text-[10.61px] font-extrabold tracking-[-0.3183px] ${
-              barOpen ? 'bg-[#E28702] text-[#FFC721]' : 'bg-[#FFC721] text-[#AB4C0A]'
-            }`}
-          >
-            ALL
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleAllClick}
+          className={`flex size-7.5 items-center justify-center rounded-[8.557px] text-[10.61px] font-extrabold tracking-[-0.3183px] ${
+            barOpen ? 'bg-[#E28702] text-[#FFC721]' : 'bg-[#FFC721] text-[#AB4C0A]'
+          }`}
+        >
+          ALL
+        </button>
+      </div>
+
+      <div className="px-6 pt-4">
+        <Button
+          onClick={() => navigate('/record-update')}
+          bgColor="#FFC721"
+          textColor="#FFFCF9"
+          pressedBgColor="#E28702"
+          pressedTextColor="#F5DF7A"
+        >
+          진료내역 불러오기
+        </Button>
       </div>
 
       {barOpen && (

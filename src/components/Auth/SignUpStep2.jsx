@@ -9,11 +9,11 @@ import Button from '@/components/common/Button';
 
 const TELECOMS = ['SKT(SKT알뜰폰)', 'KT(KT알뜰폰)', 'LG U+(LG U+알뜰폰)'];
 
-const STEP2_DRAFT_KEY = 'signup:step2';
+const DEFAULT_DRAFT_KEY = 'signup:step2';
 
-function readStep2Draft() {
+function readDraft(key) {
   try {
-    const raw = sessionStorage.getItem(STEP2_DRAFT_KEY);
+    const raw = sessionStorage.getItem(key);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     return {
@@ -72,8 +72,15 @@ const calendarFormatters = {
   formatWeekdayName: (date) => ['일', '월', '화', '수', '목', '금', '토'][date.getDay()],
 };
 
-export default function SignUpStep2({ name, onBack, onSubmit }) {
-  const [draft] = useState(readStep2Draft);
+export default function SignUpStep2({
+  name,
+  onBack,
+  onSubmit,
+  headerTitle = '가족 중 첫 가입자',
+  draftKey = DEFAULT_DRAFT_KEY,
+}) {
+  const [draft] = useState(() => readDraft(draftKey));
+  const [nameInput, setNameInput] = useState(draft.nameInput ?? '');
   const [birthDate, setBirthDate] = useState(draft.birthDate ?? '');
   const [telecom, setTelecom] = useState(draft.telecom ?? '');
   const [telecomOpen, setTelecomOpen] = useState(false);
@@ -82,23 +89,27 @@ export default function SignUpStep2({ name, onBack, onSubmit }) {
   const [periodEnd, setPeriodEnd] = useState(draft.periodEnd ?? null);
   const [calOpen, setCalOpen] = useState(null); // 'start' | 'end' | null
 
+  const effectiveName = name || nameInput;
+
   useEffect(() => {
     try {
       sessionStorage.setItem(
-        STEP2_DRAFT_KEY,
-        JSON.stringify({ birthDate, telecom, phone, periodStart, periodEnd })
+        draftKey,
+        JSON.stringify({ nameInput, birthDate, telecom, phone, periodStart, periodEnd })
       );
     } catch {
       /* ignore */
     }
-  }, [birthDate, telecom, phone, periodStart, periodEnd]);
+  }, [draftKey, nameInput, birthDate, telecom, phone, periodStart, periodEnd]);
 
-  const allFilled = Boolean(birthDate && telecom && phone && periodStart && periodEnd);
+  const allFilled = Boolean(
+    effectiveName && birthDate && telecom && phone && periodStart && periodEnd
+  );
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!allFilled) return;
-    onSubmit({ birthDate, telecom, phone, periodStart, periodEnd });
+    onSubmit({ name: effectiveName, birthDate, telecom, phone, periodStart, periodEnd });
   };
 
   const handleSelectDate = (date) => {
@@ -130,7 +141,7 @@ export default function SignUpStep2({ name, onBack, onSubmit }) {
           </button>
         )}
         <p className="mt-3.5 text-[18px] font-semibold tracking-[-0.45px] text-[#1D1B1A]">
-          가족 중 첫 가입자
+          {headerTitle}
         </p>
       </header>
       <div className="mt-3.5 h-3.75 bg-[#FAF7F2]" />
@@ -143,9 +154,19 @@ export default function SignUpStep2({ name, onBack, onSubmit }) {
 
         <form onSubmit={handleSubmit} className="mt-9 flex flex-1 flex-col">
           <div className="flex flex-col gap-7.5">
-            <p className="h-9 border-b border-[#EBE4D9] text-[18px] font-semibold text-[#3D3835]">
-              {name || '이름'}
-            </p>
+            {name ? (
+              <p className="h-9 border-b border-[#EBE4D9] text-[18px] font-semibold text-[#3D3835]">
+                {name}
+              </p>
+            ) : (
+              <input
+                type="text"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder="이름"
+                className={underlineInputClass}
+              />
+            )}
 
             <input
               type="text"
@@ -282,7 +303,7 @@ export default function SignUpStep2({ name, onBack, onSubmit }) {
           onClick={() => setCalOpen(null)}
         >
           <div
-            className="rounded-xl bg-white p-4 shadow-[0_9px_28px_rgba(0,0,0,0.12)]"
+            className="h-[390px] w-[338px] overflow-hidden rounded-xl bg-white p-4 shadow-[0_9px_28px_rgba(0,0,0,0.12)]"
             onClick={(e) => e.stopPropagation()}
           >
             <DayPicker
@@ -293,6 +314,9 @@ export default function SignUpStep2({ name, onBack, onSubmit }) {
               onSelect={handleSelectDate}
               disabled={calDisabled}
               showOutsideDays={false}
+              captionLayout="dropdown"
+              startMonth={new Date(today.getFullYear() - 10, 0)}
+              endMonth={today}
               classNames={calendarClassNames}
               formatters={calendarFormatters}
             />
