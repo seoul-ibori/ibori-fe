@@ -11,21 +11,7 @@ export default function SignUpDone({ variant = 'full' }) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {isFull && (
-        <>
-          <header className="px-7 pt-11">
-            <div className="h-[30px]" />
-            <p className="mt-3.5 text-[18px] font-semibold tracking-[-0.45px] text-[#1D1B1A]">
-              진료내역 불러오기
-            </p>
-          </header>
-          <div className="mt-3.5 h-[15px] bg-[#FAF7F2]" />
-        </>
-      )}
-
-      <div
-        className={`flex flex-1 flex-col items-center px-6 ${isFull ? 'pt-22' : 'justify-center'}`}
-      >
+      <div className={`flex flex-1 flex-col items-center px-6 justify-center`}>
         <AuthenticationIcon className="size-21" />
         <h1 className="mt-4 text-center text-[28px] font-bold leading-[44px] text-[#1D1B1A]">
           {isFull ? (

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/style.css';
 
@@ -8,6 +8,23 @@ import BackButtonIcon from '@/components/common/BackButtonIcon';
 import Button from '@/components/common/Button';
 
 const TELECOMS = ['SKT(SKT알뜰폰)', 'KT(KT알뜰폰)', 'LG U+(LG U+알뜰폰)'];
+
+const STEP2_DRAFT_KEY = 'signup:step2';
+
+function readStep2Draft() {
+  try {
+    const raw = sessionStorage.getItem(STEP2_DRAFT_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return {
+      ...parsed,
+      periodStart: parsed.periodStart ? new Date(parsed.periodStart) : null,
+      periodEnd: parsed.periodEnd ? new Date(parsed.periodEnd) : null,
+    };
+  } catch {
+    return {};
+  }
+}
 
 const underlineInputClass =
   'h-9 w-full border-b border-[#EBE4D9] bg-transparent text-[18px] font-medium text-[#3D3835] outline-none placeholder:font-medium placeholder:text-[#A8A19A]';
@@ -56,13 +73,25 @@ const calendarFormatters = {
 };
 
 export default function SignUpStep2({ name, onBack, onSubmit }) {
-  const [birthDate, setBirthDate] = useState('');
-  const [telecom, setTelecom] = useState('');
+  const [draft] = useState(readStep2Draft);
+  const [birthDate, setBirthDate] = useState(draft.birthDate ?? '');
+  const [telecom, setTelecom] = useState(draft.telecom ?? '');
   const [telecomOpen, setTelecomOpen] = useState(false);
-  const [phone, setPhone] = useState('');
-  const [periodStart, setPeriodStart] = useState(null);
-  const [periodEnd, setPeriodEnd] = useState(null);
+  const [phone, setPhone] = useState(draft.phone ?? '');
+  const [periodStart, setPeriodStart] = useState(draft.periodStart ?? null);
+  const [periodEnd, setPeriodEnd] = useState(draft.periodEnd ?? null);
   const [calOpen, setCalOpen] = useState(null); // 'start' | 'end' | null
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        STEP2_DRAFT_KEY,
+        JSON.stringify({ birthDate, telecom, phone, periodStart, periodEnd })
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [birthDate, telecom, phone, periodStart, periodEnd]);
 
   const allFilled = Boolean(birthDate && telecom && phone && periodStart && periodEnd);
 

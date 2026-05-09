@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import EyeCloseIcon from '@/assets/icons/auth/eye-close-icon.svg?react';
@@ -8,6 +8,17 @@ import BackButtonIcon from '@/components/common/BackButtonIcon';
 import Button from '@/components/common/Button';
 
 const RELATIONS = ['아빠', '엄마', '할아버지', '할머니', '형제자매', '친척'];
+
+const STEP1_DRAFT_KEY = 'signup:step1';
+
+function readStep1Draft() {
+  try {
+    const raw = sessionStorage.getItem(STEP1_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
 
 const underlineInputClass =
   'h-9 w-full border-b border-[#EBE4D9] bg-transparent text-[18px] font-medium text-[#3D3835] outline-none placeholder:font-medium placeholder:text-[#A8A19A]';
@@ -22,18 +33,30 @@ function validateSecret(value) {
   return hasLetter && hasNumber && hasSpecial;
 }
 
-export default function SignUpStep1({ method, initialData = {}, onSubmit }) {
+export default function SignUpStep1({ method, onSubmit }) {
   const navigate = useNavigate();
 
-  const [name, setName] = useState(initialData.name ?? '');
-  const [userId, setUserId] = useState(initialData.userId ?? '');
-  const [password, setPassword] = useState(initialData.password ?? '');
-  const [passwordConfirm, setPasswordConfirm] = useState(initialData.passwordConfirm ?? '');
-  const [relation, setRelation] = useState(initialData.relation ?? '');
+  const [draft] = useState(readStep1Draft);
+  const [name, setName] = useState(draft.name ?? '');
+  const [userId, setUserId] = useState(draft.userId ?? '');
+  const [password, setPassword] = useState(draft.password ?? '');
+  const [passwordConfirm, setPasswordConfirm] = useState(draft.passwordConfirm ?? '');
+  const [relation, setRelation] = useState(draft.relation ?? '');
   const [relationOpen, setRelationOpen] = useState(false);
-  const [familyPassword, setFamilyPassword] = useState(initialData.familyPassword ?? '');
+  const [familyPassword, setFamilyPassword] = useState(draft.familyPassword ?? '');
   const [showPassword, setShowPassword] = useState(false);
   const [showFamilyPassword, setShowFamilyPassword] = useState(false);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        STEP1_DRAFT_KEY,
+        JSON.stringify({ name, userId, password, passwordConfirm, relation, familyPassword })
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [name, userId, password, passwordConfirm, relation, familyPassword]);
 
   const passwordValid = validateSecret(password);
   const familyPasswordValid = validateSecret(familyPassword);
