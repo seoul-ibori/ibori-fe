@@ -21,6 +21,7 @@ const router = createBrowserRouter([
     children: [
       { path: '/', lazy: page(() => import('@/pages/Main/main')) },
       { path: '/summary', lazy: page(() => import('@/pages/Summary')) },
+      { path: '/hospital', lazy: page(() => import('@/pages/SearchHospital/SearchHospital')) },
       {
         Component: ProtectedRoute,
         children: [
