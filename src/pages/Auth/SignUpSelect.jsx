@@ -63,6 +63,9 @@ export default function SignUpSelect() {
             <br />
             이미 가입한 분이 있어요!
           </MethodButton>
+          <div className="flex font-medium text-[#B9B2A6] text-[12px] pl-4">
+            * 첫 가입자는 부모님만 가능해요
+          </div>
         </div>
       </div>
     </div>
