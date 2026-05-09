@@ -18,7 +18,7 @@ const CHILDREN = [
 const QUESTIONS = [
   {
     key: 'symptoms',
-    question: '어떤 증상이 있나요?',
+    question: '어떤 증상이 있나요? (중복선택 가능)',
     required: true,
     multiple: true,
     options: [
@@ -28,19 +28,15 @@ const QUESTIONS = [
       '발진이 나요',
       '설사를 해요',
       '구토를 해요',
+      '인후통이 있어요',
+      '무기력해요',
     ],
   },
   {
     key: 'onset',
-    question: '언제부터 그랬나요?',
+    question: '며칠 전부터 그랬나요?',
     required: true,
-    options: ['오늘', '어제', '3일 이상'],
-  },
-  {
-    key: 'recentMedicine',
-    question: '최근 처방 받은 약이 있나요?',
-    required: true,
-    options: ['네', '아니요', '몰라요'],
+    custom: 'days',
   },
   {
     key: 'temperature',
@@ -67,7 +63,7 @@ const QUESTIONS = [
 
 const initialAnswers = {
   symptoms: [],
-  onset: null,
+  onset: '',
   recentMedicine: null,
   temperature: '',
   appetite: null,
@@ -80,13 +76,26 @@ export default function CreateQuestion() {
   const { setIsModalOpen, setModalContent } = useOutletContext();
   const [selectedChildId, setSelectedChildId] = useState('1');
   const [answers, setAnswers] = useState(initialAnswers);
+  const isRequired = answers.symptoms && answers.onset;
 
   const updateAnswer = (key) => (value) => setAnswers((prev) => ({ ...prev, [key]: value }));
 
   const handleSubmit = () => {
-    setModalContent(<CreateQuestionModal onClose={() => setIsModalOpen(false)} />);
+    if (!isRequired) return;
+
+    let cancelled = false;
+    let timer;
+
+    const handleCancel = () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      setIsModalOpen(false);
+    };
+
+    setModalContent(<CreateQuestionModal onClose={handleCancel} />);
     setIsModalOpen(true);
-    setTimeout(() => {
+    timer = setTimeout(() => {
+      if (cancelled) return;
       setIsModalOpen(false);
       navigate('/question-list');
     }, 3000);
@@ -107,18 +116,19 @@ export default function CreateQuestion() {
           <br />
           질문을 준비해요
         </h1>
-        <p className="text-center text-xs leading-[18px] font-medium text-[#706963]">
+        <p className="text-center text-xs leading-4.5 font-medium text-[#706963]">
           맞벌이 환경에서 아이 상태를 충분히 파악하기 어려운 문제를,
           <br />
-          증상과 함께 <span className="font-bold">서울시 대기질·감염병 등 생활 환경 데이터</span>를
-          반영한 AI가 진료 전 질문을 자동으로 정리해 해결해요!
+          <span className="font-bold">보호자가 입력한 증상 정보와 아이 연령대를 바탕</span>으로
+          <br />
+          AI가 진료 전 필요한 질문을 자동으로 정리해 해결해요!
         </p>
       </div>
 
       <Bar />
 
       <section className="flex flex-col items-center">
-        <h2 className="w-full pl-7 py-7 text-[18px] leading-[27px] font-bold text-black">
+        <h2 className="w-full pl-7 py-7 text-[18px] leading-6.75 font-bold text-black">
           어떤 아이의 질문지를
           <br />
           만들어 드릴까요?
@@ -149,7 +159,7 @@ export default function CreateQuestion() {
       <Bar />
 
       <section className="px-7 pt-9.5 pb-9">
-        <h2 className="mb-9 text-[18px] leading-[27px] font-bold text-black">
+        <h2 className="mb-9 text-[18px] leading-6.75 font-bold text-black">
           우리 아이의 상태는
           <br />
           어떤지 알려주세요!
@@ -172,9 +182,23 @@ export default function CreateQuestion() {
                       value={answers.temperature}
                       onChange={(e) => updateAnswer('temperature')(e.target.value)}
                       placeholder=""
-                      className="flex-1 bg-transparent text-[15px] text-[#1D1B1A] outline-none placeholder:text-[#A8A19A]"
+                      className="flex-1 bg-transparent border-l-2 border-[#EBE4D9] pl-2 text-[15px] text-[#1D1B1A] outline-none placeholder:text-[#A8A19A]"
                     />
                     <span className="text-[15px] text-[#A8A19A]">℃</span>
+                  </div>
+                </StatusQuestionBox>
+              ) : q.custom === 'days' ? (
+                <StatusQuestionBox question={q.question} required={q.required}>
+                  <div className="flex items-end gap-1.5 border-b-[1.5px] border-[#A8A19A] py-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={answers.onset}
+                      onChange={(e) => updateAnswer('onset')(e.target.value.replace(/\D/g, ''))}
+                      placeholder=""
+                      className="flex-1 border-l-2 border-[#EBE4D9] pl-2 bg-transparent text-[15px] text-[#1D1B1A] outline-none placeholder:text-[#A8A19A]"
+                    />
+                    <span className="text-[15px] text-[#A8A19A]">일</span>
                   </div>
                 </StatusQuestionBox>
               ) : (
@@ -195,9 +219,11 @@ export default function CreateQuestion() {
       <div className="px-6 pb-6">
         <Button
           width="w-full"
-          pressedBgColor="#E28702"
-          pressedTextColor="#F5DF7A"
+          bgColor={isRequired ? '#FFC721' : '#B9B2A6'}
+          pressedBgColor={isRequired && '#E28702'}
+          pressedTextColor={isRequired && '#F5DF7A'}
           onClick={handleSubmit}
+          disabled={isRequired ? false : true}
         >
           질문지 생성하기
         </Button>

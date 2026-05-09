@@ -91,9 +91,9 @@ export default function QuestionList() {
         <div className="flex flex-1 flex-col gap-1.25">
           <p className="text-[15px] font-medium text-[#706963]">AI의 분석</p>
           <p className="text-[18px] leading-6 font-bold text-[#3D3835]">
-            아이의 증상, 서울시 환경 데이터를
+            아이의 증상을 종합적으로 해석해
             <br />
-            종합하여 질문을 준비했어요
+            진료에 필요한 질문을 준비했어요
           </p>
         </div>
       </section>
