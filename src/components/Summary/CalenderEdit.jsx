@@ -9,9 +9,16 @@ export default function CalenderEdit({
   onLocationChange,
   onMemoChange,
   onTimeChange,
+  highlightHospitalLocation = false,
 }) {
   const fieldClass =
     'w-full bg-transparent py-2 text-[18px] leading-[28px] outline-none ring-0 border-0 rounded-none';
+  const locationFieldClass = `${fieldClass} font-medium text-[#706963] ${
+    highlightHospitalLocation
+      ? 'placeholder:font-medium placeholder:text-[#FF3D00]'
+      : 'placeholder:font-medium placeholder:text-[#A8A19A]'
+  }`;
+  const locationRowBorder = highlightHospitalLocation ? 'border-[#FF3D00]' : 'border-[#CFD2DA]/80';
 
   return (
     <div className="px-6 pb-4 pt-1">
@@ -22,7 +29,11 @@ export default function CalenderEdit({
             <p className="text-[18px] font-bold leading-normal text-black">정보를 작성해주세요</p>
           </div>
           <div className="mt-0.5 border-t-[0.2px] border-[#CFD2DA]/80" aria-hidden />
-          <CalenderDateEdit timeDisplay={timeDisplay} onTimeChange={onTimeChange} />
+          <CalenderDateEdit
+            key={timeDisplay}
+            timeDisplay={timeDisplay}
+            onTimeChange={onTimeChange}
+          />
         </div>
         <div className="my-1" aria-hidden />
 
@@ -40,7 +51,7 @@ export default function CalenderEdit({
               placeholder="일정 제목을 입력해주세요"
             />
           </div>
-          <div className="border-b-[0.2px] border-[#CFD2DA]/80">
+          <div className={`border-b-[0.2px] ${locationRowBorder}`}>
             <label htmlFor="calendar-edit-location" className="sr-only">
               병원 위치를 입력해주세요
             </label>
@@ -49,7 +60,7 @@ export default function CalenderEdit({
               type="text"
               value={location}
               onChange={(e) => onLocationChange(e.target.value)}
-              className={`${fieldClass} font-medium text-[#706963] placeholder:font-medium placeholder:text-[#A8A19A]`}
+              className={locationFieldClass}
               placeholder="병원 위치를 입력해주세요"
             />
           </div>

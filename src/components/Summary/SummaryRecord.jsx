@@ -54,9 +54,16 @@ function SectionBlock({ title, lines }) {
 export default function SummaryRecord({
   childName = '우리집 아들',
   childLabelColor = '#5AA7FF',
+  summaryDateText,
+  hideScheduleCta = false,
   onBack = () => {},
-  onGoHome = () => {},
+  onGoToSchedule = () => {},
 }) {
+  const dateHeading =
+    summaryDateText && String(summaryDateText).trim()
+      ? String(summaryDateText).trim()
+      : DUMMY_SUMMARY.dateText;
+
   return (
     <div className="fixed inset-0 z-[130] overflow-y-auto bg-[#FFFFFF]">
       <div className="mx-auto min-h-full w-full max-w-112.5 bg-[#FFFFFF] pb-8">
@@ -81,7 +88,7 @@ export default function SummaryRecord({
           </span>
           <p className="mt-6 text-[12px] font-medium text-[#706963]">AI가 진료 내용을 정리했어요</p>
           <p className="mt-3 text-[26px] leading-[1.35] font-extrabold tracking-[-0.32px] text-[#1D1B1A]">
-            {DUMMY_SUMMARY.dateText}
+            {dateHeading}
             <br />
             {DUMMY_SUMMARY.heading}
           </p>
@@ -136,11 +143,13 @@ export default function SummaryRecord({
           </div>
         </section>
 
-        <div className="mt-6 px-5 pb-6">
-          <Button onClick={onGoHome} bgColor="#FFC721" textColor="#FFFFFF">
-            홈으로 돌아가기
-          </Button>
-        </div>
+        {hideScheduleCta ? null : (
+          <div className="mt-6 px-5 pb-6">
+            <Button onClick={onGoToSchedule} bgColor="#FFC721" textColor="#FFFFFF">
+              위치 입력 후 저장하기
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

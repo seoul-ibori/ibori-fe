@@ -69,13 +69,16 @@ export default function Record({
   isOpen,
   childName = '',
   childLabelColor = '#5AA7FF',
+  recordingCellIndex = null,
+  summaryDateText,
   onBack = () => {},
-  onGoHome = () => {},
+  onOpenScheduleFromSummary = () => {},
 }) {
   const [isRecording, setIsRecording] = useState(false);
   const [isStopped, setIsStopped] = useState(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [recordingCompletedAt, setRecordingCompletedAt] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [micError, setMicError] = useState('');
   const [waveHeights, setWaveHeights] = useState(() =>
@@ -237,11 +240,13 @@ export default function Record({
     cursorIndexRef.current = 0;
     setIsSummaryOpen(false);
     setIsSummaryModalOpen(false);
+    setRecordingCompletedAt(null);
     clearSummaryTimeout();
     onBack();
   };
 
   const openSummaryModal = () => {
+    setRecordingCompletedAt(new Date());
     stopMicrophone();
     setIsRecording(false);
     setIsStopped(true);
@@ -397,8 +402,21 @@ export default function Record({
         <SummaryRecord
           childName={childName}
           childLabelColor={childLabelColor}
+          summaryDateText={summaryDateText}
           onBack={() => setIsSummaryOpen(false)}
-          onGoHome={onGoHome}
+          onGoToSchedule={() => {
+            if (
+              recordingCompletedAt == null ||
+              recordingCellIndex == null ||
+              recordingCellIndex < 0
+            ) {
+              return;
+            }
+            onOpenScheduleFromSummary({
+              completedAt: recordingCompletedAt,
+              cellIndex: recordingCellIndex,
+            });
+          }}
         />
       ) : null}
     </div>

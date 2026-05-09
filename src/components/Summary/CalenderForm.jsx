@@ -3,53 +3,86 @@ import PencilIcon from '@/assets/icons/pencil.svg?react';
 import PlaceIcon from '@/assets/icons/place.svg?react';
 import Button from '@/components/common/Button';
 
-function InfoItem({ icon, text, highlight = false }) {
+function InfoItem({ icon, text, recording = false, highlight = false }) {
+  const textClass = recording
+    ? 'text-[12px] font-semibold leading-none text-[#FF3D00]'
+    : highlight
+      ? 'text-[12px] font-semibold leading-none text-[#E28702]'
+      : 'text-[12px] font-medium leading-none text-[#706963]';
+
   return (
     <div className="flex items-center gap-3">
-      <span className="flex size-6 items-center justify-center rounded-full bg-[#FFC721]">
-        {icon}
-      </span>
-      <p
-        className={`text-[12px] font-medium leading-none ${
-          highlight ? 'text-[#E28702] font-semibold' : 'text-[#706963]'
+      <span
+        className={`flex size-6 shrink-0 items-center justify-center rounded-full bg-[#FFC721] ${
+          recording ? '-translate-y-0.5' : ''
         }`}
       >
-        {text}
-      </p>
+        {icon}
+      </span>
+      <p className={textClass}>{text}</p>
     </div>
   );
 }
 
-export default function CalenderForm({ label, time, location, memo }) {
+export default function CalenderForm({
+  label,
+  time,
+  location,
+  memo,
+  fromRecording = false,
+  medicineText = '항노르디젠 화이트정10mg',
+  onViewSummary = () => {},
+}) {
+  const titleClass = fromRecording
+    ? 'text-[18px] font-bold leading-none text-[#FF3D00]'
+    : 'text-[18px] font-semibold leading-none text-[#252525]';
+
   return (
     <div className="mx-6 mb-4 rounded-[22px] border border-[#FFC721] bg-white px-5 pb-5 pt-7">
-      <div className="mb-8 flex items-center justify-between">
-        <p className="text-[18px] font-semibold leading-none text-[#252525]">{label}</p>
+      <div className={`flex items-center justify-between ${fromRecording ? 'mb-6' : 'mb-8'}`}>
+        <p className={titleClass}>{label}</p>
         <p className="text-[15px] font-medium leading-none text-[#706963]">{time}</p>
       </div>
 
-      <div className="space-y-4">
+      <div className={`space-y-4 ${fromRecording ? '-mt-1' : ''}`}>
         <InfoItem
           icon={<PlaceIcon className="size-3 [&_path]:fill-[#AB4C0A]" />}
           text={location || '-'}
+          recording={fromRecording}
         />
         {memo?.trim() ? (
-          <InfoItem icon={<PencilIcon className="size-3 [&_path]:fill-[#AB4C0A]" />} text={memo} />
+          <InfoItem
+            icon={<PencilIcon className="size-3 [&_path]:fill-[#AB4C0A]" />}
+            text={memo}
+            recording={fromRecording}
+          />
         ) : null}
         <InfoItem
           icon={<MedicineIcon className="size-[9px] [&_path]:fill-[#AB4C0A]" />}
-          text="항노르디젠 화이트정10mg"
-          highlight
+          text={medicineText}
+          recording={fromRecording}
+          highlight={!fromRecording}
         />
       </div>
 
-      <Button
-        backgroundColor="#FFC721"
-        textColor="#FFFFFF"
-        className="mt-6 rounded-[14px] text-[18px] font-semibold leading-none"
-      >
-        일정에 녹음 추가하기
-      </Button>
+      {fromRecording ? (
+        <Button
+          bgColor="#FFC721"
+          textColor="#FFFFFF"
+          onClick={onViewSummary}
+          className="mt-6 rounded-[14px] text-[18px] font-semibold leading-none"
+        >
+          진료 요약 보기
+        </Button>
+      ) : (
+        <Button
+          bgColor="#FFC721"
+          textColor="#FFFFFF"
+          className="mt-6 rounded-[14px] text-[18px] font-semibold leading-none"
+        >
+          일정에 녹음 추가하기
+        </Button>
+      )}
     </div>
   );
 }
