@@ -1,8 +1,5 @@
-import { TokenManager } from '@/api/api';
 import AICreateQuestion from '@/components/Main/AICreateQuestion';
 import Bar from '@/components/Main/Bar';
-import LoginSuggestBanner from '@/components/Main/LoginSuggestBanner';
-import MainPost from '@/components/Main/MainPost';
 import WeeklyRecord from '@/components/Main/WeeklyRecord';
 
 const MOCK_CHILDREN = [
@@ -49,27 +46,10 @@ const AISection = () => (
 );
 
 export default function Main() {
-  const isLoggedIn = false; //Boolean(TokenManager.getAccessToken());
-
-  if (!isLoggedIn) {
-    return (
-      <div className="flex flex-col py-5">
-        <section className="flex flex-col items-center gap-1 py-1">
-          <MainPost />
-          <LoginSuggestBanner />
-        </section>
-        <Bar />
-        <AISection />
-        <Bar />
-        <WeeklyRecord />
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col py-5">
       <Bar />
-      <WeeklyRecord isLoggedIn childrenList={MOCK_CHILDREN} records={MOCK_RECORDS} />
+      <WeeklyRecord childrenList={MOCK_CHILDREN} records={MOCK_RECORDS} />
       <Bar />
       <AISection />
     </div>
