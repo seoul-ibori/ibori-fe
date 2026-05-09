@@ -48,11 +48,14 @@ export default function SignIn() {
               className="h-13 rounded-[12px] bg-[#FAF7F2] px-4.25 text-[15px] font-medium text-[#7D7D7D] outline-none placeholder:text-[#7D7D7D]"
             />
           </div>
-          <div className="flex w-full flex-col items-center gap-6">
+          <div className="flex w-full flex-col items-center gap-3">
             <Button type="submit" pressedBgColor="#E28702" pressedTextColor="#F5DF7A">
               로그인 하기
             </Button>
-            <p className="text-[15px] font-medium text-[#7D7D7D]">
+            <Button type="submit" pressedBgColor="#E28702" pressedTextColor="#F5DF7A">
+              테스트 계정으로 진입하기
+            </Button>
+            <p className="text-[15px] font-medium text-[#7D7D7D] mt-1.5">
               계정이 없으신가요?{' '}
               <button
                 type="button"

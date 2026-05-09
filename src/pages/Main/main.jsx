@@ -1,3 +1,6 @@
+import { Navigate } from 'react-router';
+
+import { TokenManager } from '@/api/api';
 import AICreateQuestion from '@/components/Main/AICreateQuestion';
 import Bar from '@/components/Main/Bar';
 import WeeklyRecord from '@/components/Main/WeeklyRecord';
@@ -46,6 +49,12 @@ const AISection = () => (
 );
 
 export default function Main() {
+  const isLoggedIn = true; //Boolean(TokenManager.getAccessToken());
+
+  if (!isLoggedIn) {
+    return <Navigate to="/introduce" replace />;
+  }
+
   return (
     <div className="flex flex-col py-5">
       <Bar />

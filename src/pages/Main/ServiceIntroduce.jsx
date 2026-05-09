@@ -5,7 +5,6 @@ import Intro1 from '@/components/Main/ServiceIntroduce/Intro1';
 import Intro2 from '@/components/Main/ServiceIntroduce/Intro2';
 import Intro3 from '@/components/Main/ServiceIntroduce/Intro3';
 import Intro4 from '@/components/Main/ServiceIntroduce/Intro4';
-import BackButtonIcon from '@/components/common/BackButtonIcon';
 import Button from '@/components/common/Button';
 
 const SLIDES = [
@@ -64,7 +63,7 @@ const SLIDES = [
     activeDot: '#3D3835',
     inactiveDot: '#A8A19A',
     backColor: '#A8A19A',
-    buttonText: '홈으로 가기',
+    buttonText: '로그인 하기',
   },
 ];
 
@@ -93,31 +92,14 @@ export default function ServiceIntroduce() {
 
   const handleNext = () => {
     if (index === SLIDES.length - 1) {
-      navigate('/');
+      navigate('/login');
       return;
     }
     setIndex((prev) => prev + 1);
   };
 
-  const handleBack = () => {
-    if (index === 0) {
-      navigate(-1);
-      return;
-    }
-    setIndex((prev) => prev - 1);
-  };
-
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <button
-        type="button"
-        onClick={handleBack}
-        aria-label="뒤로가기"
-        className="absolute top-12 left-7 z-30 p-1"
-      >
-        <BackButtonIcon color={slide.backColor} />
-      </button>
-
       <div
         className="flex h-full transition-transform duration-500 ease-out"
         style={{ transform: `translateX(-${index * 100}%)` }}
