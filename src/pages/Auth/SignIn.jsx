@@ -55,6 +55,7 @@ export default function SignIn() {
       navigate('/');
     } catch (error) {
       console.log('테스트 로그인 실패', error);
+      setErrorMessage('테스트 계정 로그인을 다시 시도해주세요.');
     }
   };
 
