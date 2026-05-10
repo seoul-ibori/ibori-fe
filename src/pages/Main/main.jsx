@@ -1,42 +1,46 @@
+import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router';
 
 import { TokenManager } from '@/api/api';
+import { getChildren } from '@/api/child';
+import { getMedicalRecord } from '@/api/medicalRecord';
 import AICreateQuestion from '@/components/Main/AICreateQuestion';
 import Bar from '@/components/Main/Bar';
 import WeeklyRecord from '@/components/Main/WeeklyRecord';
+import { useChildrenStore } from '@/store/childrenStore';
 
-const MOCK_CHILDREN = [
-  { id: '1', name: '우리집 아들', labelColor: '#5AA7FF' },
-  { id: '2', name: '우리 막둥이', labelColor: '#FFC721' },
-  { id: '3', name: '우리 첫째 딸', labelColor: '#FF8763' },
-];
+const PROFILE_COLOR_MAP = {
+  PINK: '#FF8DA1',
+  BLUE: '#5AA7FF',
+  YELLOW: '#FFC721',
+  ORANGE: '#FF8763',
+  GREEN: '#7AC14A',
+  PURPLE: '#A988E0',
+};
 
-const MOCK_RECORDS = [
-  {
-    id: 'r1',
-    childId: '1',
-    hospitalName: '서울시청 부속의원',
-    medicineName: '항히스타민제 알비다정10mg',
-    date: '2026. 04. 10/ 18:20',
-    category: '일반외래',
-  },
-  {
-    id: 'r2',
-    childId: '2',
-    hospitalName: '서울가정의학과의원',
-    medicineName: '항히스타민제 알비다정10mg',
-    date: '2026. 04. 10/ 15:20',
-    category: '일반외래',
-  },
-  {
-    id: 'r3',
-    childId: '3',
-    hospitalName: '서상렬내과의원',
-    medicineName: '항히스타민제 알비다정10mg',
-    date: '2026. 04. 10/ 11:20',
-    category: '일반외래',
-  },
-];
+const formatRecordDate = (treatDate, treatTime) => {
+  if (!treatDate || treatDate.length < 8) return '';
+  const y = treatDate.slice(0, 4);
+  const m = treatDate.slice(4, 6);
+  const d = treatDate.slice(6, 8);
+  return treatTime ? `${y}. ${m}. ${d}/ ${treatTime}` : `${y}. ${m}. ${d}`;
+};
+
+const mapChild = (c) => ({
+  id: c.childId,
+  name: c.childName,
+  labelColor: PROFILE_COLOR_MAP[c.profileColor] ?? '#5AA7FF',
+});
+
+const mapRecord = (r) => ({
+  id: r.recordId,
+  childId: r.childId,
+  childName: r.childName,
+  hospitalName: r.hospitalName,
+  medicineName: r.medications?.[0]?.drugName ?? '',
+  date: formatRecordDate(r.treatDate, r.treatTime),
+  category: r.title ?? '',
+});
 
 const AISection = () => (
   <section className="flex flex-col gap-4 px-6 py-5.5">
@@ -50,15 +54,66 @@ const AISection = () => (
 
 export default function Main() {
   const isLoggedIn = Boolean(TokenManager.getAccessToken());
+  const today = new Date();
+
+  const children = useChildrenStore((s) => s.children);
+  const setChildren = useChildrenStore((s) => s.setChildren);
+
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth() + 1);
+  const [selectedChildId, setSelectedChildId] = useState(null);
+  const [records, setRecords] = useState([]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    (async () => {
+      try {
+        const data = await getChildren();
+        setChildren(data);
+      } catch (error) {
+        console.log('아이 목록 불러오기 실패', error);
+      }
+    })();
+  }, [isLoggedIn, setChildren]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    (async () => {
+      try {
+        const data = await getMedicalRecord({
+          year,
+          month,
+          childId: selectedChildId ?? undefined,
+        });
+        setRecords(data ?? []);
+      } catch (error) {
+        console.log('진료 기록 불러오기 실패', error);
+      }
+    })();
+  }, [isLoggedIn, year, month, selectedChildId]);
 
   if (!isLoggedIn) {
     return <Navigate to="/introduce" replace />;
   }
 
+  const childrenList = children.map(mapChild);
+  const recordsList = records.map(mapRecord);
+
   return (
     <div className="flex flex-col py-5">
       <Bar />
-      <WeeklyRecord childrenList={MOCK_CHILDREN} records={MOCK_RECORDS} />
+      <WeeklyRecord
+        childrenList={childrenList}
+        records={recordsList}
+        year={year}
+        month={month}
+        onPeriodChange={(y, m) => {
+          setYear(y);
+          setMonth(m);
+        }}
+        selectedChildId={selectedChildId}
+        onSelectChild={setSelectedChildId}
+      />
       <Bar />
       <AISection />
     </div>
