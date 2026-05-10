@@ -1,5 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
+import { TokenManager } from '@/api/api';
+import { getMedicalRecord } from '@/api/medicalRecord';
 import MicrophoneIcon from '@/assets/icons/summary/microphone.svg?react';
 import BottomSheet from '@/components/Summary/BottomSheet';
 import Record from '@/components/Summary/Record';
@@ -7,13 +9,85 @@ import SummaryRecord from '@/components/Summary/SummaryRecord';
 import VoiceChildSelectScreen from '@/components/Summary/VoiceChildSelectScreen';
 import Modal from '@/components/common/Modal';
 import { CELLS, WEEK_DAYS } from '@/constants/calenderDummyData';
-import { formatDateToKoreanMeridiem } from '@/utils/koreanMeridiemTime';
+import { formatDateToKoreanMeridiem, hhmmToKoreanMeridiem } from '@/utils/koreanMeridiemTime';
+
+/** UI 헤더와 동일 (월 이동 연동 전까지 고정) */
+const CALENDAR_YEAR = 2026;
+const CALENDAR_MONTH = 4;
+
+function toTreatDateYmd(day) {
+  if (typeof day !== 'number' || day < 1 || day > 31) return '';
+  return `${CALENDAR_YEAR}${String(CALENDAR_MONTH).padStart(2, '0')}${String(day).padStart(2, '0')}`;
+}
 
 function cloneCells(source) {
   return source.map((cell) => ({
     ...cell,
     events: cell.events?.map((e) => ({ ...e })),
   }));
+}
+
+const CHILD_EVENT_COLORS = {
+  1: 'bg-[#5AA7FF]',
+  2: 'bg-[#FFC721]',
+  3: 'bg-[#FF8763]',
+};
+
+function eventColorForChildId(childId) {
+  const n = Number(childId);
+  return CHILD_EVENT_COLORS[n] ?? 'bg-[#FFC721]';
+}
+
+function normalizeMedicalRecordList(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (raw && Array.isArray(raw.data)) return raw.data;
+  if (raw && Array.isArray(raw.records)) return raw.records;
+  return [];
+}
+
+function parseTreatDateParts(treatDate) {
+  if (treatDate == null) return null;
+  const s = String(treatDate);
+  if (s.length < 8) return null;
+  return {
+    y: Number(s.slice(0, 4)),
+    m: Number(s.slice(4, 6)),
+    d: Number(s.slice(6, 8)),
+  };
+}
+
+/** 더미 그리드에서 해당 월의 `day` 일에 해당하는 칸 (같은 day가 두 칸이면 비-muted 우선) */
+function findCellIndexForMonthDay(cells, day) {
+  const matches = cells.map((c, i) => ({ c, i })).filter(({ c }) => c.day === day);
+  if (matches.length === 0) return null;
+  const nonMuted = matches.find(({ c }) => !c.muted);
+  return (nonMuted ?? matches[0]).i;
+}
+
+function mergeApiMedicalRecordsIntoCells(baseCells, records, year, month) {
+  const copy = baseCells.map((cell) => ({
+    ...cell,
+    events: cell.events?.filter((e) => e.recordId == null).map((e) => ({ ...e })),
+  }));
+  for (const r of records) {
+    const t = parseTreatDateParts(r.treatDate);
+    if (!t || t.y !== year || t.m !== month || !Number.isFinite(t.d)) continue;
+    const idx = findCellIndexForMonthDay(copy, t.d);
+    if (idx == null) continue;
+    const ev = {
+      label: r.title ?? '',
+      location: r.hospitalName ?? '',
+      memo: r.memo ?? '',
+      time: hhmmToKoreanMeridiem(r.treatTime),
+      color: eventColorForChildId(r.childId),
+      childId: r.childId != null ? String(r.childId) : undefined,
+      recordId: r.recordId,
+    };
+    const cell = copy[idx];
+    const nextEvents = [...(cell.events ?? []), ev];
+    copy[idx] = { ...cell, events: nextEvents };
+  }
+  return copy;
 }
 
 export default function Calendar() {
@@ -56,6 +130,29 @@ export default function Calendar() {
   }, [cells, selectedIndex]);
 
   const clearSchedulePrefill = useCallback(() => setScheduleAddPrefill(null), []);
+
+  useEffect(() => {
+    if (!TokenManager.getAccessToken()) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const raw = await getMedicalRecord({
+          year: CALENDAR_YEAR,
+          month: CALENDAR_MONTH,
+        });
+        if (cancelled) return;
+        const list = normalizeMedicalRecordList(raw);
+        setCells((prev) =>
+          mergeApiMedicalRecordsIntoCells(cloneCells(prev), list, CALENDAR_YEAR, CALENDAR_MONTH)
+        );
+      } catch (e) {
+        console.error('캘린더 진료 기록 불러오기 실패', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <section className="relative h-[530px] w-full overflow-hidden bg-white px-6 pb-6 pt-[25px]">
@@ -122,9 +219,13 @@ export default function Calendar() {
               )}
             </div>
             <div className="min-h-0 flex-1 space-y-0.5 overflow-hidden">
-              {cell.events?.map((event) => (
+              {cell.events?.map((event, ei) => (
                 <div
-                  key={event.label}
+                  key={
+                    event.recordId != null
+                      ? `r-${event.recordId}`
+                      : `e-${cell.day}-${ei}-${event.label}`
+                  }
                   className={`truncate rounded-[2px] px-1 py-0.5 text-[8px] font-medium ${
                     event.fromRecording
                       ? 'border border-[#FF3D00] bg-[#FFFCF9] text-[#FF3D00]'
@@ -178,6 +279,7 @@ export default function Calendar() {
         events={selectedCell?.events ?? []}
         onClose={() => setSelectedIndex(null)}
         onSaveEvents={handleSaveDayEvents}
+        treatDate={selectedCell ? toTreatDateYmd(selectedCell.day) : ''}
         scheduleAddPrefill={scheduleAddPrefill}
         onScheduleAddPrefillConsumed={clearSchedulePrefill}
         summaryDateText={selectedCell ? `2026년 4월 ${selectedCell.day}일` : ''}
