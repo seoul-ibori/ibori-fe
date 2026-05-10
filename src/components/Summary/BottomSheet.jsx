@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { deleteMedicalRecord, patchMedicalRecord, postMedicalRecord } from '@/api/medicalRecord';
 import CalendarIcon from '@/assets/icons/calender.svg?react';
 import DownArrowIcon from '@/assets/icons/down-arrow.svg?react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
@@ -11,6 +12,7 @@ import Button from '@/components/common/Button';
 import { getRegisteredChildFullName } from '@/constants/voiceChildren';
 import { useCalendarDelete } from '@/hooks/useCalendarDelete';
 import { normalizeEventForEdit, useCalendarEdit } from '@/hooks/useCalendarEdit';
+import { koreanMeridiemToHHmm } from '@/utils/koreanMeridiemTime';
 
 function EventRow({ title, time, trailing, fromRecording = false }) {
   const titleClass = fromRecording
@@ -29,6 +31,19 @@ function EventRow({ title, time, trailing, fromRecording = false }) {
       </div>
     </div>
   );
+}
+
+/** POST /medical-records 응답에서 생성 id만 추출 (스키마가 달라도 최대한 대응) */
+function recordIdFromCreateResponse(data) {
+  if (data == null) return undefined;
+  if (typeof data === 'number' && Number.isFinite(data)) return data;
+  if (typeof data === 'object') {
+    const inner = data.data !== undefined ? data.data : data;
+    const id = inner?.id ?? inner?.recordId ?? data.id ?? data.recordId;
+    if (typeof id === 'number' && Number.isFinite(id)) return id;
+    if (typeof id === 'string' && /^\d+$/.test(id)) return Number(id);
+  }
+  return undefined;
 }
 
 function formatKoreanMeridiemTime(value) {
@@ -58,7 +73,21 @@ export default function BottomSheet({
   summaryDateText = '',
   onViewRecordingSummary = () => {},
   onRequestRecording = () => {},
+  /** 선택한 날짜 `YYYYMMDD` (일정 추가 API용) */
+  treatDate = '',
 }) {
+  const syncDeletedRecords = useCallback(async (removed) => {
+    const ids = [
+      ...new Set(
+        removed
+          .map((ev) => ev?.recordId)
+          .filter((id) => id != null && Number.isFinite(Number(id)) && Number(id) >= 1)
+          .map((id) => Number(id))
+      ),
+    ];
+    await Promise.all(ids.map((id) => deleteMedicalRecord(id)));
+  }, []);
+
   const {
     deleteMode,
     listEvents,
@@ -68,7 +97,8 @@ export default function BottomSheet({
     handleCompleteDeleteMode,
     handleOffsetChange,
     removeDraftAt,
-  } = useCalendarDelete(events, onSaveEvents);
+    isCommittingDelete,
+  } = useCalendarDelete(events, onSaveEvents, { syncDeletedRecords });
 
   const { editPhase, editingIndex, exitEditModes, enterEditList, openEditForm, backToEditList } =
     useCalendarEdit();
@@ -89,6 +119,7 @@ export default function BottomSheet({
   const [addFormPrimaryLabel, setAddFormPrimaryLabel] = useState('추가 일정 저장하기');
   const [addFormPrimaryBg, setAddFormPrimaryBg] = useState('#FFC721');
   const [addFormRecordingMeta, setAddFormRecordingMeta] = useState(null);
+  const [isPostingSchedule, setIsPostingSchedule] = useState(false);
   const prefillConsumedRef = useRef(onScheduleAddPrefillConsumed);
 
   useEffect(() => {
@@ -103,6 +134,7 @@ export default function BottomSheet({
     setAddFormPrimaryLabel('추가 일정 저장하기');
     setAddFormPrimaryBg('#FFC721');
     setAddFormRecordingMeta(null);
+    setIsPostingSchedule(false);
     exitEditModes();
   }, [exitEditModes]);
 
@@ -174,7 +206,7 @@ export default function BottomSheet({
     prefillConsumedRef.current?.();
   }, [isOpen, scheduleAddPrefill, handleCancelDeleteMode, exitEditModes]);
 
-  const handleSaveForm = useCallback(() => {
+  const handleSaveForm = useCallback(async () => {
     if (!formDraft.label.trim()) return;
     const formattedTime = formatKoreanMeridiemTime(formDraft.time);
     const recordingExtras =
@@ -187,6 +219,76 @@ export default function BottomSheet({
           }
         : {};
 
+    let createdRecordId;
+
+    if (isAddingForm) {
+      const childIdStr = String(formDraft.childId ?? '').trim();
+      const childIdNum = Number(childIdStr);
+      if (!childIdStr || !Number.isFinite(childIdNum) || childIdNum < 1) {
+        alert('아이를 선택해 주세요.');
+        return;
+      }
+      if (!treatDate || !/^\d{8}$/.test(treatDate)) {
+        alert('일정 날짜를 확인할 수 없습니다.');
+        return;
+      }
+      setIsPostingSchedule(true);
+      try {
+        const postRes = await postMedicalRecord({
+          childId: childIdNum,
+          title: formDraft.label.trim(),
+          hospitalName: (formDraft.location ?? '').trim(),
+          treatDate,
+          treatTime: koreanMeridiemToHHmm(formattedTime),
+          memo: (formDraft.memo ?? '').trim(),
+        });
+        createdRecordId = recordIdFromCreateResponse(postRes);
+      } catch (err) {
+        const data = err?.response?.data;
+        const msg =
+          (typeof data?.message === 'string' && data.message) ||
+          (typeof data === 'string' ? data : null) ||
+          err?.message ||
+          '일정 저장에 실패했습니다.';
+        alert(msg);
+        return;
+      } finally {
+        setIsPostingSchedule(false);
+      }
+    } else if (editingIndex !== null) {
+      const rawId = events[editingIndex]?.recordId;
+      const recordId = rawId != null ? Number(rawId) : NaN;
+      if (Number.isFinite(recordId) && recordId >= 1) {
+        const childIdStr = String(formDraft.childId ?? '').trim();
+        const childIdNum = Number(childIdStr);
+        if (!childIdStr || !Number.isFinite(childIdNum) || childIdNum < 1) {
+          alert('아이를 선택해 주세요.');
+          return;
+        }
+        setIsPostingSchedule(true);
+        try {
+          await patchMedicalRecord(recordId, {
+            childId: childIdNum,
+            title: formDraft.label.trim(),
+            hospitalName: (formDraft.location ?? '').trim(),
+            treatTime: koreanMeridiemToHHmm(formattedTime),
+            memo: (formDraft.memo ?? '').trim(),
+          });
+        } catch (err) {
+          const data = err?.response?.data;
+          const msg =
+            (typeof data?.message === 'string' && data.message) ||
+            (typeof data === 'string' ? data : null) ||
+            err?.message ||
+            '일정 수정에 실패했습니다.';
+          alert(msg);
+          return;
+        } finally {
+          setIsPostingSchedule(false);
+        }
+      }
+    }
+
     const next = isAddingForm
       ? [
           ...events.map((e) => ({ ...e })),
@@ -197,6 +299,7 @@ export default function BottomSheet({
             time: formattedTime,
             color: formDraft.color ?? 'bg-[#FFC721]',
             childId: formDraft.childId || undefined,
+            ...(createdRecordId != null ? { recordId: createdRecordId } : {}),
             ...recordingExtras,
           },
         ]
@@ -223,6 +326,7 @@ export default function BottomSheet({
     isAddingForm,
     onSaveEvents,
     exitEditModesFully,
+    treatDate,
   ]);
 
   if (!isOpen) return null;
@@ -230,7 +334,23 @@ export default function BottomSheet({
   const isEditForm = editPhase === 'form';
   const isFormMode = isEditForm || isAddingForm;
   const isEditList = editPhase === 'list';
-  const saveEditDisabled = !formDraft.label.trim();
+  const patchTargetRecordId =
+    !isAddingForm && editingIndex !== null
+      ? (() => {
+          const raw = events[editingIndex]?.recordId;
+          if (raw == null) return null;
+          const n = Number(raw);
+          return Number.isFinite(n) && n >= 1 ? n : null;
+        })()
+      : null;
+  const requiresChildForApi = isAddingForm || patchTargetRecordId != null;
+  const saveEditDisabled =
+    !formDraft.label.trim() ||
+    (requiresChildForApi && !String(formDraft.childId ?? '').trim()) ||
+    isPostingSchedule;
+
+  const formSaveLabel = isAddingForm ? addFormPrimaryLabel : '수정 저장하기';
+  const formSaveBg = saveEditDisabled ? '#B9B2A6' : isAddingForm ? addFormPrimaryBg : '#FFC721';
 
   const headerDateBlock = (
     <div className="flex items-center gap-4">
@@ -359,7 +479,7 @@ export default function BottomSheet({
           memo={formDraft.memo}
           timeDisplay={formDraft.time}
           selectedChildId={formDraft.childId}
-          showChildSelect={isAddingForm}
+          showChildSelect={isAddingForm || patchTargetRecordId != null}
           highlightHospitalLocation={highlightHospitalLocation}
           onTitleChange={(v) => setFormDraft((p) => ({ ...p, label: v }))}
           onLocationChange={(v) => {
@@ -465,6 +585,7 @@ export default function BottomSheet({
                       />
                       {expandedRowKey === rowKey ? (
                         <CalenderForm
+                          key={event.recordId != null ? `mr-${event.recordId}` : rowKey}
                           label={event.label}
                           time={rowTime}
                           location={event.location}
@@ -472,9 +593,10 @@ export default function BottomSheet({
                           childDisplayName={getRegisteredChildFullName(event.childId ?? '')}
                           fromRecording={Boolean(event.fromRecording)}
                           medicineText={event.medicineText ?? '항히스타민제 알비다정10mg'}
-                          onViewSummary={() =>
+                          recordId={event.recordId}
+                          onViewSummary={(meta) =>
                             onViewRecordingSummary({
-                              childName: event.recordingChildName ?? '',
+                              childName: meta?.childName ?? event.recordingChildName ?? '',
                               childLabelColor: event.recordingChildLabelColor ?? '#5AA7FF',
                               summaryDateText,
                               eventIndex: index,
@@ -501,8 +623,9 @@ export default function BottomSheet({
           <>
             <button
               type="button"
-              onClick={() => handleCompleteDeleteMode()}
-              className="h-14 w-full rounded-xl bg-[#FFC721] text-[18px] font-bold leading-none text-white"
+              disabled={isCommittingDelete}
+              onClick={() => void handleCompleteDeleteMode()}
+              className="h-14 w-full rounded-xl bg-[#FFC721] text-[18px] font-bold leading-none text-white disabled:opacity-60"
             >
               완료
             </button>
@@ -517,13 +640,13 @@ export default function BottomSheet({
         ) : isFormMode ? (
           <>
             <Button
-              bgColor={saveEditDisabled ? '#B9B2A6' : addFormPrimaryBg}
+              bgColor={formSaveBg}
               textColor="#FFFCF9"
               disabled={saveEditDisabled}
-              onClick={() => handleSaveForm()}
+              onClick={() => void handleSaveForm()}
               className="rounded-[10px] font-semibold"
             >
-              {addFormPrimaryLabel}
+              {formSaveLabel}
             </Button>
             <button
               type="button"
