@@ -1,15 +1,21 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import { TokenManager } from '@/api/api';
+import ChainIcon from '@/assets/icons/settings/chain_icon.svg?react';
+import ChainOrangeIcon from '@/assets/icons/settings/chain_orange_icon.svg?react';
 import ChildIcon from '@/assets/icons/settings/child_icon.svg?react';
 import ChildPlusIcon from '@/assets/icons/settings/child_plus_icon.svg?react';
+import DoorIcon from '@/assets/icons/settings/door_icon.svg?react';
 import HouseIcon from '@/assets/icons/settings/house_icon.svg?react';
+import LetterIcon from '@/assets/icons/settings/letter_box_icon.svg?react';
 import LockIcon from '@/assets/icons/settings/lock_icon.svg?react';
 import LogoutIcon from '@/assets/icons/settings/logout_icon.svg?react';
 import PersonIcon from '@/assets/icons/settings/person_icon.svg?react';
 import Bar from '@/components/Main/Bar';
 import MemberBar from '@/components/Setting/MemberBar';
 import SettingBar from '@/components/Setting/SettingBar';
+import SettingModal from '@/components/Setting/SettingModal';
 import BackButtonIcon from '@/components/common/BackButtonIcon';
 
 const INITIAL_MEMBERS = [
@@ -17,11 +23,48 @@ const INITIAL_MEMBERS = [
   { id: '2', role: '할아버지', roleColor: '#3EB839', name: '김할아버지' },
 ];
 
+const INVITE_LINK = 'https://ibori.app/invite/sample';
+
+function validateFamilyCode(value) {
+  if (!value || value.length < 8) return false;
+  const hasLetter = /[a-zA-Z]/.test(value);
+  const hasSpecial = /[^A-Za-z0-9]/.test(value);
+  return hasLetter && hasSpecial;
+}
+
 export default function Settings() {
   const navigate = useNavigate();
   const [members, setMembers] = useState(INITIAL_MEMBERS);
+  const [activeModal, setActiveModal] = useState(null); // 'invite' | 'familyCode' | 'logout' | null
+  const [familyCode, setFamilyCode] = useState('');
+
+  const closeModal = () => {
+    setActiveModal(null);
+    setFamilyCode('');
+  };
 
   const handleDelete = (id) => setMembers((prev) => prev.filter((m) => m.id !== id));
+
+  const handleCopyInvite = async () => {
+    try {
+      await navigator.clipboard.writeText(INVITE_LINK);
+    } catch {
+      /* ignore */
+    }
+    closeModal();
+  };
+
+  const handleFamilyCodeSubmit = () => {
+    if (!validateFamilyCode(familyCode)) return;
+    // TODO: 가족 고유번호 변경 API 호출
+    closeModal();
+  };
+
+  const handleLogout = () => {
+    TokenManager.clear();
+    closeModal();
+    navigate('/');
+  };
 
   return (
     <div className="flex flex-col">
@@ -60,12 +103,82 @@ export default function Settings() {
       <Bar />
 
       <section className="py-1">
-        <SettingBar icon={<HouseIcon />} label="구성원 추가하기" />
+        <SettingBar
+          icon={<HouseIcon />}
+          label="구성원 추가하기"
+          onClick={() => setActiveModal('invite')}
+        />
         <SettingBar icon={<ChildPlusIcon />} label="아이 등록하기" />
         <SettingBar icon={<ChildIcon />} label="아이 정보 수정하기" />
-        <SettingBar icon={<LockIcon />} label="가족 비밀번호 수정하기" />
-        <SettingBar icon={<LogoutIcon />} label="로그아웃하기" />
+        <SettingBar
+          icon={<LockIcon />}
+          label="가족 비밀번호 수정하기"
+          onClick={() => setActiveModal('familyCode')}
+        />
+        <SettingBar
+          icon={<LogoutIcon />}
+          label="로그아웃하기"
+          onClick={() => setActiveModal('logout')}
+        />
       </section>
+
+      {activeModal === 'invite' && (
+        <SettingModal
+          onClose={closeModal}
+          actionLabel="초대 링크 복사하기"
+          actionIcon={<ChainIcon />}
+          actionPressedIcon={<ChainOrangeIcon />}
+          onAction={handleCopyInvite}
+        >
+          <div className="flex flex-col items-center gap-2.25 pt-5">
+            <LetterIcon />
+            <p className="text-center text-[18px] font-medium leading-7.25 text-[#706963]">
+              아래 버튼을 눌러
+              <br />
+              <span className="font-semibold">초대 링크</span>를 공유해주세요
+            </p>
+          </div>
+        </SettingModal>
+      )}
+
+      {activeModal === 'familyCode' && (
+        <SettingModal
+          onClose={closeModal}
+          actionLabel="완료하기"
+          onAction={handleFamilyCodeSubmit}
+          actionDisabled={!validateFamilyCode(familyCode)}
+        >
+          <div className="flex flex-col gap-2 pt-3">
+            <p className="text-center text-[18px] leading-[29px] text-[#706963]">
+              <span className="font-bold">새로운 고유번호</span>를 입력하세요
+            </p>
+            <p className="text-center text-[12px] font-medium text-[#B9B2A6]">
+              8자 이상이며 영문자와 특수문자 포함
+            </p>
+            <input
+              type="text"
+              value={familyCode}
+              onChange={(e) => setFamilyCode(e.target.value)}
+              placeholder="가족 고유번호를 입력하세요"
+              className="mt-3 h-13 w-full rounded-[12px] bg-[#FAF7F2] px-4.25 text-[15px] font-medium text-[#3D3835] outline-none placeholder:text-[#B9B2A6]"
+            />
+          </div>
+        </SettingModal>
+      )}
+
+      {activeModal === 'logout' && (
+        <SettingModal onClose={closeModal} actionLabel="로그아웃하기" onAction={handleLogout}>
+          <div className="flex flex-col items-center gap-4 pt-5">
+            <DoorIcon />
+            <p className="text-[18px] font-extrabold text-[#1D1B1A]">떠나시는 건가요?</p>
+            <p className="text-center text-[15px] font-medium leading-[1.541] text-[#B9B2A6]">
+              아래 버튼 클릭시, 로그아웃 후
+              <br />
+              로그인화면으로 돌아가요
+            </p>
+          </div>
+        </SettingModal>
+      )}
     </div>
   );
 }
