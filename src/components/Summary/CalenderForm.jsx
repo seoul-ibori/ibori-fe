@@ -3,19 +3,29 @@ import PencilIcon from '@/assets/icons/pencil.svg?react';
 import PlaceIcon from '@/assets/icons/place.svg?react';
 import Button from '@/components/common/Button';
 
-function InfoItem({ icon, text, recording = false, highlight = false }) {
+function InfoItem({
+  icon,
+  text,
+  recording = false,
+  highlight = false,
+  iconLift = 'none',
+  rowNudgeDown = false,
+}) {
   const textClass = recording
     ? 'text-[12px] font-semibold leading-none text-[#FF3D00]'
     : highlight
       ? 'text-[12px] font-semibold leading-none text-[#E28702]'
       : 'text-[12px] font-medium leading-none text-[#706963]';
 
+  const isPillRow = iconLift === 'pill';
+  const rowLiftClass = isPillRow ? '-translate-y-2.5' : '';
+  const rowDownClass = rowNudgeDown ? 'translate-y-1' : '';
+  const iconOnlyLiftClass = !isPillRow && recording && !rowNudgeDown ? '-translate-y-0.5' : '';
+
   return (
-    <div className="flex items-center gap-3">
+    <div className={`flex items-center gap-3 ${rowLiftClass} ${rowDownClass}`}>
       <span
-        className={`flex size-6 shrink-0 items-center justify-center rounded-full bg-[#FFC721] ${
-          recording ? '-translate-y-0.5' : ''
-        }`}
+        className={`flex size-6 shrink-0 items-center justify-center rounded-full bg-[#FFC721] ${iconOnlyLiftClass}`}
       >
         {icon}
       </span>
@@ -44,11 +54,12 @@ export default function CalenderForm({
         <p className="text-[15px] font-medium leading-none text-[#706963]">{time}</p>
       </div>
 
-      <div className={`space-y-4 ${fromRecording ? '-mt-1' : ''}`}>
+      <div className={`space-y-5 ${fromRecording ? '-mt-1' : ''}`}>
         <InfoItem
           icon={<PlaceIcon className="size-3 [&_path]:fill-[#AB4C0A]" />}
           text={location || '-'}
           recording={fromRecording}
+          rowNudgeDown={fromRecording}
         />
         {memo?.trim() ? (
           <InfoItem
@@ -62,6 +73,7 @@ export default function CalenderForm({
           text={medicineText}
           recording={fromRecording}
           highlight={!fromRecording}
+          iconLift="pill"
         />
       </div>
 
@@ -78,7 +90,7 @@ export default function CalenderForm({
         <Button
           bgColor="#FFC721"
           textColor="#FFFFFF"
-          className="mt-6 rounded-[14px] text-[18px] font-semibold leading-none"
+          className="mt-10 rounded-[14px] text-[18px] font-semibold leading-none"
         >
           일정에 녹음 추가하기
         </Button>
