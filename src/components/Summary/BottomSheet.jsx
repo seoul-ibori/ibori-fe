@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import CalendarIcon from '@/assets/icons/calender.svg?react';
 import DownArrowIcon from '@/assets/icons/down-arrow.svg?react';
@@ -8,15 +8,20 @@ import { SwipeableEventRow } from '@/components/Summary/CalendarDelete';
 import CalenderEdit from '@/components/Summary/CalenderEdit';
 import CalenderForm from '@/components/Summary/CalenderForm';
 import Button from '@/components/common/Button';
+import { getRegisteredChildFullName } from '@/constants/voiceChildren';
 import { useCalendarDelete } from '@/hooks/useCalendarDelete';
 import { normalizeEventForEdit, useCalendarEdit } from '@/hooks/useCalendarEdit';
 
-function EventRow({ title, time, trailing }) {
+function EventRow({ title, time, trailing, fromRecording = false }) {
+  const titleClass = fromRecording
+    ? 'text-[18px] font-bold leading-none text-[#FF3D00]'
+    : 'text-[18px] font-semibold leading-none text-[#8D8782]';
+
   return (
     <div className="flex w-full items-center justify-between px-6 py-5">
       <div className="flex items-center gap-4">
         <span className="h-6 w-1 rounded bg-[#FFC721]" />
-        <p className="text-[18px] font-semibold leading-none text-[#8D8782]">{title}</p>
+        <p className={titleClass}>{title}</p>
       </div>
       <div className="flex items-center gap-5">
         <span className="text-[15px] font-medium leading-none text-[#C7C1B8]">{time}</span>
@@ -48,6 +53,11 @@ export default function BottomSheet({
   onClose,
   onAddSchedule = () => {},
   onSaveEvents = () => {},
+  scheduleAddPrefill = null,
+  onScheduleAddPrefillConsumed = () => {},
+  summaryDateText = '',
+  onViewRecordingSummary = () => {},
+  onRequestRecording = () => {},
 }) {
   const {
     deleteMode,
@@ -69,16 +79,30 @@ export default function BottomSheet({
     memo: '',
     time: '오전 10:30',
     color: 'bg-[#FFC721]',
+    childId: '',
   });
 
   const [selectedEditRowIndex, setSelectedEditRowIndex] = useState(null);
   const [isAddingForm, setIsAddingForm] = useState(false);
   const [expandedRowKey, setExpandedRowKey] = useState(null);
+  const [highlightHospitalLocation, setHighlightHospitalLocation] = useState(false);
+  const [addFormPrimaryLabel, setAddFormPrimaryLabel] = useState('추가 일정 저장하기');
+  const [addFormPrimaryBg, setAddFormPrimaryBg] = useState('#FFC721');
+  const [addFormRecordingMeta, setAddFormRecordingMeta] = useState(null);
+  const prefillConsumedRef = useRef(onScheduleAddPrefillConsumed);
+
+  useEffect(() => {
+    prefillConsumedRef.current = onScheduleAddPrefillConsumed;
+  }, [onScheduleAddPrefillConsumed]);
 
   const exitEditModesFully = useCallback(() => {
     setSelectedEditRowIndex(null);
     setIsAddingForm(false);
     setExpandedRowKey(null);
+    setHighlightHospitalLocation(false);
+    setAddFormPrimaryLabel('추가 일정 저장하기');
+    setAddFormPrimaryBg('#FFC721');
+    setAddFormRecordingMeta(null);
     exitEditModes();
   }, [exitEditModes]);
 
@@ -93,6 +117,7 @@ export default function BottomSheet({
         memo: n.memo,
         time: n.time,
         color: n.color,
+        childId: n.childId ?? '',
       });
       openEditForm(index);
     },
@@ -107,20 +132,61 @@ export default function BottomSheet({
   const openAddScheduleForm = useCallback(() => {
     exitEditModesFully();
     handleCancelDeleteMode();
+    setHighlightHospitalLocation(false);
+    setAddFormPrimaryLabel('추가 일정 저장하기');
+    setAddFormPrimaryBg('#FFC721');
+    setAddFormRecordingMeta(null);
     setFormDraft({
       label: '',
       location: '',
       memo: '',
       time: '오전 10:30',
       color: 'bg-[#FFC721]',
+      childId: '',
     });
     setIsAddingForm(true);
     onAddSchedule();
   }, [exitEditModesFully, handleCancelDeleteMode, onAddSchedule]);
 
+  /* Sync summary → 일정 추가 프리필(한 번에 폼 모드 전환) */
+  useEffect(() => {
+    if (!isOpen || !scheduleAddPrefill) return;
+    /* eslint-disable react-hooks/set-state-in-effect -- 외부 프리필을 단일 틱에 폼 상태로 반영 */
+    handleCancelDeleteMode();
+    exitEditModes();
+    setSelectedEditRowIndex(null);
+    setExpandedRowKey(null);
+    setIsAddingForm(true);
+    const childId = scheduleAddPrefill.childId ?? '';
+    setFormDraft({
+      label: scheduleAddPrefill.label ?? '',
+      location: scheduleAddPrefill.location ?? '',
+      memo: scheduleAddPrefill.memo ?? '',
+      time: scheduleAddPrefill.time ?? '오전 10:30',
+      color: scheduleAddPrefill.color ?? 'bg-[#FFC721]',
+      childId,
+    });
+    setHighlightHospitalLocation(Boolean(scheduleAddPrefill.highlightHospitalLocation));
+    setAddFormPrimaryLabel(scheduleAddPrefill.saveButtonLabel ?? '추가 일정 저장하기');
+    setAddFormPrimaryBg(scheduleAddPrefill.primaryButtonBgColor ?? '#FFC721');
+    setAddFormRecordingMeta(scheduleAddPrefill.recordingMeta ?? null);
+    /* eslint-enable react-hooks/set-state-in-effect */
+    prefillConsumedRef.current?.();
+  }, [isOpen, scheduleAddPrefill, handleCancelDeleteMode, exitEditModes]);
+
   const handleSaveForm = useCallback(() => {
     if (!formDraft.label.trim()) return;
     const formattedTime = formatKoreanMeridiemTime(formDraft.time);
+    const recordingExtras =
+      isAddingForm && addFormRecordingMeta
+        ? {
+            fromRecording: true,
+            recordingChildName: addFormRecordingMeta.childName ?? '',
+            recordingChildLabelColor: addFormRecordingMeta.childLabelColor ?? '#5AA7FF',
+            medicineText: addFormRecordingMeta.medicineText ?? '항히스타민제 알비다정10mg',
+          }
+        : {};
+
     const next = isAddingForm
       ? [
           ...events.map((e) => ({ ...e })),
@@ -130,6 +196,8 @@ export default function BottomSheet({
             memo: formDraft.memo,
             time: formattedTime,
             color: formDraft.color ?? 'bg-[#FFC721]',
+            childId: formDraft.childId || undefined,
+            ...recordingExtras,
           },
         ]
       : events.map((e, i) => {
@@ -141,12 +209,21 @@ export default function BottomSheet({
             memo: formDraft.memo,
             time: formattedTime,
             color: formDraft.color ?? e.color,
+            childId: formDraft.childId || undefined,
           };
         });
 
     onSaveEvents(next);
     exitEditModesFully();
-  }, [editingIndex, events, formDraft, isAddingForm, onSaveEvents, exitEditModesFully]);
+  }, [
+    addFormRecordingMeta,
+    editingIndex,
+    events,
+    formDraft,
+    isAddingForm,
+    onSaveEvents,
+    exitEditModesFully,
+  ]);
 
   if (!isOpen) return null;
 
@@ -276,14 +353,22 @@ export default function BottomSheet({
 
       {isFormMode ? (
         <CalenderEdit
+          key={isAddingForm ? 'schedule-add' : `schedule-edit-${editingIndex ?? 'x'}`}
           title={formDraft.label}
           location={formDraft.location}
           memo={formDraft.memo}
           timeDisplay={formDraft.time}
+          selectedChildId={formDraft.childId}
+          showChildSelect={isAddingForm}
+          highlightHospitalLocation={highlightHospitalLocation}
           onTitleChange={(v) => setFormDraft((p) => ({ ...p, label: v }))}
-          onLocationChange={(v) => setFormDraft((p) => ({ ...p, location: v }))}
+          onLocationChange={(v) => {
+            setFormDraft((p) => ({ ...p, location: v }));
+            if (v.trim()) setHighlightHospitalLocation(false);
+          }}
           onMemoChange={(v) => setFormDraft((p) => ({ ...p, memo: v }))}
           onTimeChange={(v) => setFormDraft((p) => ({ ...p, time: v }))}
+          onChildIdChange={(id) => setFormDraft((p) => ({ ...p, childId: id }))}
         />
       ) : (
         <div>
@@ -309,6 +394,7 @@ export default function BottomSheet({
                       <EventRow
                         title={event.label}
                         time={rowTime}
+                        fromRecording={Boolean(event.fromRecording)}
                         trailing={
                           <span className="text-[22px] font-medium leading-none text-[#C7C1B8]">
                             ›
@@ -338,6 +424,7 @@ export default function BottomSheet({
                       <EventRow
                         title={event.label}
                         time={rowTime}
+                        fromRecording={Boolean(event.fromRecording)}
                         trailing={
                           <button
                             type="button"
@@ -358,6 +445,7 @@ export default function BottomSheet({
                       <EventRow
                         title={event.label}
                         time={rowTime}
+                        fromRecording={Boolean(event.fromRecording)}
                         trailing={
                           <button
                             type="button"
@@ -381,6 +469,18 @@ export default function BottomSheet({
                           time={rowTime}
                           location={event.location}
                           memo={event.memo}
+                          childDisplayName={getRegisteredChildFullName(event.childId ?? '')}
+                          fromRecording={Boolean(event.fromRecording)}
+                          medicineText={event.medicineText ?? '항히스타민제 알비다정10mg'}
+                          onViewSummary={() =>
+                            onViewRecordingSummary({
+                              childName: event.recordingChildName ?? '',
+                              childLabelColor: event.recordingChildLabelColor ?? '#5AA7FF',
+                              summaryDateText,
+                              eventIndex: index,
+                            })
+                          }
+                          onAddRecording={onRequestRecording}
                         />
                       ) : null}
                     </>
@@ -417,13 +517,13 @@ export default function BottomSheet({
         ) : isFormMode ? (
           <>
             <Button
-              backgroundColor={saveEditDisabled ? '#B9B2A6' : '#FFC721'}
+              bgColor={saveEditDisabled ? '#B9B2A6' : addFormPrimaryBg}
               textColor="#FFFCF9"
               disabled={saveEditDisabled}
               onClick={() => handleSaveForm()}
               className="rounded-[10px] font-semibold"
             >
-              추가 일정 저장하기
+              {addFormPrimaryLabel}
             </Button>
             <button
               type="button"

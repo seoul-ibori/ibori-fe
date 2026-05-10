@@ -3,12 +3,9 @@ import { useState } from 'react';
 import BackButtonIcon from '@/components/common/BackButtonIcon';
 import Button from '@/components/common/Button';
 import ChildrenImgBox from '@/components/common/ChildrenImgBox';
+import { VOICE_CHILDREN } from '@/constants/voiceChildren';
 
-const CHILDREN = [
-  { id: '2', name: '우리 막둥이', labelColor: '#FFC721' },
-  { id: '1', name: '우리집 아들', labelColor: '#5AA7FF' },
-  { id: '3', name: '우리 첫째 딸', labelColor: '#FF8763' },
-];
+const CHILDREN = VOICE_CHILDREN;
 
 export default function VoiceChildSelectScreen({ isOpen, onClose, onConfirm = () => {} }) {
   const [selectedChildId, setSelectedChildId] = useState('2');
