@@ -8,6 +8,7 @@ import { SwipeableEventRow } from '@/components/Summary/CalendarDelete';
 import CalenderEdit from '@/components/Summary/CalenderEdit';
 import CalenderForm from '@/components/Summary/CalenderForm';
 import Button from '@/components/common/Button';
+import { getRegisteredChildFullName } from '@/constants/voiceChildren';
 import { useCalendarDelete } from '@/hooks/useCalendarDelete';
 import { normalizeEventForEdit, useCalendarEdit } from '@/hooks/useCalendarEdit';
 
@@ -56,6 +57,7 @@ export default function BottomSheet({
   onScheduleAddPrefillConsumed = () => {},
   summaryDateText = '',
   onViewRecordingSummary = () => {},
+  onRequestRecording = () => {},
 }) {
   const {
     deleteMode,
@@ -77,6 +79,7 @@ export default function BottomSheet({
     memo: '',
     time: '오전 10:30',
     color: 'bg-[#FFC721]',
+    childId: '',
   });
 
   const [selectedEditRowIndex, setSelectedEditRowIndex] = useState(null);
@@ -114,6 +117,7 @@ export default function BottomSheet({
         memo: n.memo,
         time: n.time,
         color: n.color,
+        childId: n.childId ?? '',
       });
       openEditForm(index);
     },
@@ -138,6 +142,7 @@ export default function BottomSheet({
       memo: '',
       time: '오전 10:30',
       color: 'bg-[#FFC721]',
+      childId: '',
     });
     setIsAddingForm(true);
     onAddSchedule();
@@ -152,12 +157,14 @@ export default function BottomSheet({
     setSelectedEditRowIndex(null);
     setExpandedRowKey(null);
     setIsAddingForm(true);
+    const childId = scheduleAddPrefill.childId ?? '';
     setFormDraft({
       label: scheduleAddPrefill.label ?? '',
       location: scheduleAddPrefill.location ?? '',
       memo: scheduleAddPrefill.memo ?? '',
       time: scheduleAddPrefill.time ?? '오전 10:30',
       color: scheduleAddPrefill.color ?? 'bg-[#FFC721]',
+      childId,
     });
     setHighlightHospitalLocation(Boolean(scheduleAddPrefill.highlightHospitalLocation));
     setAddFormPrimaryLabel(scheduleAddPrefill.saveButtonLabel ?? '추가 일정 저장하기');
@@ -189,6 +196,7 @@ export default function BottomSheet({
             memo: formDraft.memo,
             time: formattedTime,
             color: formDraft.color ?? 'bg-[#FFC721]',
+            childId: formDraft.childId || undefined,
             ...recordingExtras,
           },
         ]
@@ -201,6 +209,7 @@ export default function BottomSheet({
             memo: formDraft.memo,
             time: formattedTime,
             color: formDraft.color ?? e.color,
+            childId: formDraft.childId || undefined,
           };
         });
 
@@ -344,10 +353,13 @@ export default function BottomSheet({
 
       {isFormMode ? (
         <CalenderEdit
+          key={isAddingForm ? 'schedule-add' : `schedule-edit-${editingIndex ?? 'x'}`}
           title={formDraft.label}
           location={formDraft.location}
           memo={formDraft.memo}
           timeDisplay={formDraft.time}
+          selectedChildId={formDraft.childId}
+          showChildSelect={isAddingForm}
           highlightHospitalLocation={highlightHospitalLocation}
           onTitleChange={(v) => setFormDraft((p) => ({ ...p, label: v }))}
           onLocationChange={(v) => {
@@ -356,6 +368,7 @@ export default function BottomSheet({
           }}
           onMemoChange={(v) => setFormDraft((p) => ({ ...p, memo: v }))}
           onTimeChange={(v) => setFormDraft((p) => ({ ...p, time: v }))}
+          onChildIdChange={(id) => setFormDraft((p) => ({ ...p, childId: id }))}
         />
       ) : (
         <div>
@@ -456,6 +469,7 @@ export default function BottomSheet({
                           time={rowTime}
                           location={event.location}
                           memo={event.memo}
+                          childDisplayName={getRegisteredChildFullName(event.childId ?? '')}
                           fromRecording={Boolean(event.fromRecording)}
                           medicineText={event.medicineText ?? '항히스타민제 알비다정10mg'}
                           onViewSummary={() =>
@@ -463,8 +477,10 @@ export default function BottomSheet({
                               childName: event.recordingChildName ?? '',
                               childLabelColor: event.recordingChildLabelColor ?? '#5AA7FF',
                               summaryDateText,
+                              eventIndex: index,
                             })
                           }
+                          onAddRecording={onRequestRecording}
                         />
                       ) : null}
                     </>

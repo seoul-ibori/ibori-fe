@@ -1,4 +1,8 @@
+import { useState } from 'react';
+
 import DoctorIcon from '@/assets/icons/summary/doctor.svg?react';
+import TrashIcon from '@/assets/icons/trash.svg?react';
+import SummaryDeleteConfirmModal from '@/components/Summary/SummaryDeleteConfirmModal';
 import BackButtonIcon from '@/components/common/BackButtonIcon';
 import Button from '@/components/common/Button';
 import ChildrenImgBox from '@/components/common/ChildrenImgBox';
@@ -56,9 +60,13 @@ export default function SummaryRecord({
   childLabelColor = '#5AA7FF',
   summaryDateText,
   hideScheduleCta = false,
+  allowSummaryDelete = false,
   onBack = () => {},
   onGoToSchedule = () => {},
+  onConfirmDeleteSummary = () => {},
 }) {
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
   const dateHeading =
     summaryDateText && String(summaryDateText).trim()
       ? String(summaryDateText).trim()
@@ -67,10 +75,20 @@ export default function SummaryRecord({
   return (
     <div className="fixed inset-0 z-[130] overflow-y-auto bg-[#FFFFFF]">
       <div className="mx-auto min-h-full w-full max-w-112.5 bg-[#FFFFFF] pb-8">
-        <header className="px-6 pt-10">
+        <header className="flex items-start justify-between px-6 pt-10">
           <button type="button" onClick={onBack} aria-label="뒤로가기" className="p-1">
             <BackButtonIcon color="#706963" />
           </button>
+          {allowSummaryDelete ? (
+            <button
+              type="button"
+              aria-label="AI 요약본 삭제"
+              onClick={() => setDeleteModalOpen(true)}
+              className="flex size-10 shrink-0 items-center justify-center rounded-[8.5px] bg-[#FFC721]"
+            >
+              <TrashIcon className="size-4 [&_path]:fill-[#AB4C0A]" />
+            </button>
+          ) : null}
         </header>
 
         <section className="mt-8 flex flex-col items-center px-6 text-center">
@@ -151,6 +169,15 @@ export default function SummaryRecord({
           </div>
         )}
       </div>
+
+      <SummaryDeleteConfirmModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirmDelete={() => {
+          setDeleteModalOpen(false);
+          onConfirmDeleteSummary();
+        }}
+      />
     </div>
   );
 }

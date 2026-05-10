@@ -1,3 +1,4 @@
+import HumanIcon from '@/assets/icons/human.svg?react';
 import MedicineIcon from '@/assets/icons/medicine.svg?react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
 import PlaceIcon from '@/assets/icons/place.svg?react';
@@ -39,13 +40,15 @@ export default function CalenderForm({
   time,
   location,
   memo,
+  childDisplayName = '',
   fromRecording = false,
   medicineText = '항노르디젠 화이트정10mg',
   onViewSummary = () => {},
+  onAddRecording = () => {},
 }) {
   const titleClass = fromRecording
     ? 'text-[18px] font-bold leading-none text-[#FF3D00]'
-    : 'text-[18px] font-semibold leading-none text-[#252525]';
+    : 'text-[18px] font-semibold leading-none text-[#8D8782]';
 
   return (
     <div className="mx-6 mb-4 rounded-[22px] border border-[#FFC721] bg-white px-5 pb-5 pt-7">
@@ -54,16 +57,34 @@ export default function CalenderForm({
         <p className="text-[15px] font-medium leading-none text-[#706963]">{time}</p>
       </div>
 
-      <div className={`space-y-5 ${fromRecording ? '-mt-1' : ''}`}>
+      <div className={`space-y-4 ${fromRecording ? '-mt-1' : ''}`}>
         <InfoItem
           icon={<PlaceIcon className="size-3 [&_path]:fill-[#AB4C0A]" />}
           text={location || '-'}
           recording={fromRecording}
           rowNudgeDown={fromRecording}
         />
+        {childDisplayName ? (
+          <div className="pt-1">
+            {fromRecording ? (
+              <InfoItem
+                icon={<HumanIcon className="size-[10px] [&_path]:fill-[#AB4C0A]" />}
+                text={childDisplayName}
+                recording={fromRecording}
+              />
+            ) : (
+              <div className="flex items-center gap-3">
+                <span className="size-6 shrink-0" aria-hidden />
+                <p className="text-[12px] font-medium leading-none text-[#706963]">
+                  {childDisplayName}
+                </p>
+              </div>
+            )}
+          </div>
+        ) : null}
         {memo?.trim() ? (
           <InfoItem
-            icon={<PencilIcon className="size-3 [&_path]:fill-[#AB4C0A]" />}
+            icon={<PencilIcon className="size-2.5 [&_path]:fill-[#AB4C0A]" />}
             text={memo}
             recording={fromRecording}
           />
@@ -90,6 +111,7 @@ export default function CalenderForm({
         <Button
           bgColor="#FFC721"
           textColor="#FFFFFF"
+          onClick={onAddRecording}
           className="mt-10 rounded-[14px] text-[18px] font-semibold leading-none"
         >
           일정에 녹음 추가하기

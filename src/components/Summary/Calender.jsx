@@ -186,7 +186,12 @@ export default function Calendar() {
             childName: payload.childName || '우리집 아들',
             childLabelColor: payload.childLabelColor || '#5AA7FF',
             summaryDateText: payload.summaryDateText ?? '',
+            eventIndex: typeof payload.eventIndex === 'number' ? payload.eventIndex : -1,
           });
+        }}
+        onRequestRecording={() => {
+          setSelectedIndex(null);
+          setIsVoiceModalOpen(true);
         }}
       />
 
@@ -196,6 +201,36 @@ export default function Calendar() {
           childLabelColor={recordingSummaryView.childLabelColor}
           summaryDateText={recordingSummaryView.summaryDateText}
           hideScheduleCta
+          allowSummaryDelete={
+            typeof recordingSummaryView.eventIndex === 'number' &&
+            recordingSummaryView.eventIndex >= 0
+          }
+          onConfirmDeleteSummary={() => {
+            const idx = recordingSummaryView?.eventIndex;
+            if (typeof idx !== 'number' || idx < 0 || selectedIndex === null) {
+              setRecordingSummaryView(null);
+              return;
+            }
+            setCells((prev) => {
+              const copy = [...prev];
+              const cell = copy[selectedIndex];
+              if (!cell?.events || idx >= cell.events.length) return prev;
+              const nextEvents = cell.events.map((e, i) =>
+                i === idx
+                  ? {
+                      ...e,
+                      fromRecording: false,
+                      recordingChildName: undefined,
+                      recordingChildLabelColor: undefined,
+                      childId: undefined,
+                    }
+                  : e
+              );
+              copy[selectedIndex] = { ...cell, events: nextEvents };
+              return copy;
+            });
+            setRecordingSummaryView(null);
+          }}
           onBack={() => setRecordingSummaryView(null)}
           onGoToSchedule={() => {}}
         />
@@ -240,6 +275,7 @@ export default function Calendar() {
             location: '',
             label: '',
             memo: '',
+            childId: selectedVoiceChild?.id ?? '',
             highlightHospitalLocation: true,
             saveButtonLabel: '녹음 저장하기',
             primaryButtonBgColor: '#B9B2A6',

@@ -31,6 +31,7 @@ export const CELLS = [
         memo: '병원 갔을 때 안약도 사 오기!',
         time: '오전 10:30',
         fromRecording: true,
+        childId: '1',
         recordingChildName: '우리집 아들',
         recordingChildLabelColor: '#5AA7FF',
         medicineText: '항히스타민제 알비다정10mg',
