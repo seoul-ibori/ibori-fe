@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 
+import { signUp } from '@/api/auth';
 import AuthenticationNeed from '@/components/Auth/AuthenticationNeed';
 import SignUpDone from '@/components/Auth/SignUpDone';
 import SignUpStep1 from '@/components/Auth/SignUpStep1';
@@ -10,6 +11,15 @@ const VALID_STEPS = new Set(['step1', 'step2', 'auth', 'done']);
 
 const STEP1_DRAFT_KEY = 'signup:step1';
 const STEP2_DRAFT_KEY = 'signup:step2';
+
+const RELATION_TO_ROLE = {
+  아빠: 'FATHER',
+  엄마: 'MOTHER',
+  할아버지: 'GRANDFATHER',
+  할머니: 'GRANDMOTHER',
+  형제자매: 'SIBLING',
+  친척: 'RELATIVE',
+};
 
 function readDraft(key) {
   try {
@@ -28,11 +38,23 @@ function clearDraft(key) {
   }
 }
 
+function buildSignUpPayload(step1, isFirst) {
+  return {
+    name: step1.name,
+    username: step1.userId,
+    password: step1.password,
+    familyCode: step1.familyPassword,
+    firstFamilyMember: isFirst,
+    familyRole: RELATION_TO_ROLE[step1.relation],
+  };
+}
+
 export default function SignUp() {
   const [searchParams, setSearchParams] = useSearchParams();
   const method = searchParams.get('method'); // 'first' | 'existing'
   const stepParam = searchParams.get('step');
   const step = VALID_STEPS.has(stepParam) ? stepParam : 'step1';
+  const isFirst = method === 'first';
 
   const goToStep = (next) => {
     const params = new URLSearchParams(searchParams);
@@ -40,25 +62,35 @@ export default function SignUp() {
     setSearchParams(params);
   };
 
-  const handleStep1Submit = () => {
-    if (method === 'first') {
+  const handleStep1Submit = async (step1Data) => {
+    if (isFirst) {
       goToStep('step2');
       return;
     }
-    // TODO: existing 가족원 가입 API 호출
-    clearDraft(STEP1_DRAFT_KEY);
-    goToStep('done');
+    try {
+      await signUp(buildSignUpPayload(step1Data, false));
+      clearDraft(STEP1_DRAFT_KEY);
+      goToStep('done');
+    } catch (error) {
+      console.log('회원가입 실패', error);
+    }
   };
 
   const handleStep2Submit = () => {
     goToStep('auth');
   };
 
-  const handleAuthComplete = () => {
-    // TODO: first 가입자 + 인증 정보로 회원가입 API 호출
-    clearDraft(STEP1_DRAFT_KEY);
-    clearDraft(STEP2_DRAFT_KEY);
-    goToStep('done');
+  const handleAuthComplete = async () => {
+    const step1Draft = readDraft(STEP1_DRAFT_KEY);
+    if (!step1Draft) return;
+    try {
+      await signUp(buildSignUpPayload(step1Draft, true));
+      clearDraft(STEP1_DRAFT_KEY);
+      clearDraft(STEP2_DRAFT_KEY);
+      goToStep('done');
+    } catch (error) {
+      console.log('회원가입 실패', error);
+    }
   };
 
   // 잘못된 step 파라미터로 진입했을 때 step1로 정규화
