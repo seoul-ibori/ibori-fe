@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router';
 
+import { postQuestion } from '@/api/Question';
 import Bar from '@/components/Main/Bar';
 import ChildrenBox from '@/components/Main/ChildrenBox';
 import CreateQuestionModal from '@/components/Question/CreateQuestionModal';
@@ -8,12 +9,22 @@ import StatusQuestionBox from '@/components/Question/StatusQuestionBox';
 import BackButtonIcon from '@/components/common/BackButtonIcon';
 import Button from '@/components/common/Button';
 import PageTitleBox from '@/components/common/PageTitleBox';
+import { useChildrenStore } from '@/store/childrenStore';
 
-const CHILDREN = [
-  { id: '1', name: '우리집 아들', labelColor: '#5AA7FF' },
-  { id: '2', name: '우리 막둥이', labelColor: '#FFC721' },
-  { id: '3', name: '우리 첫째 딸', labelColor: '#FF8763' },
-];
+const PROFILE_COLOR_MAP = {
+  PINK: '#FF8DA1',
+  BLUE: '#5AA7FF',
+  YELLOW: '#FFC721',
+  ORANGE: '#FF8763',
+  GREEN: '#7AC14A',
+  PURPLE: '#A988E0',
+};
+
+const toChildView = (c) => ({
+  id: c.childId,
+  name: c.childName,
+  labelColor: PROFILE_COLOR_MAP[c.profileColor] ?? '#5AA7FF',
+});
 
 const QUESTIONS = [
   {
@@ -74,31 +85,52 @@ const initialAnswers = {
 export default function CreateQuestion() {
   const navigate = useNavigate();
   const { setIsModalOpen, setModalContent } = useOutletContext();
-  const [selectedChildId, setSelectedChildId] = useState('1');
+  const childrenRaw = useChildrenStore((s) => s.children);
+  const childrenList = useMemo(() => childrenRaw.map(toChildView), [childrenRaw]);
+  const firstChildId = childrenList[0]?.id ?? null;
+  const [selectedChildId, setSelectedChildId] = useState(firstChildId);
   const [answers, setAnswers] = useState(initialAnswers);
   const isRequired = answers.symptoms && answers.onset;
 
   const updateAnswer = (key) => (value) => setAnswers((prev) => ({ ...prev, [key]: value }));
 
-  const handleSubmit = () => {
+  const buildPayload = () => {
+    const temp = answers.temperature !== '' ? Number(answers.temperature) : null;
+    return {
+      symptoms: answers.symptoms,
+      symptomDuration: answers.onset,
+      temperature: Number.isFinite(temp) ? temp : null,
+      appetiteChange: answers.appetite,
+      sleepCondition: answers.sleep,
+      medicationNotes: answers.medicineDifficulty,
+    };
+  };
+
+  const handleSubmit = async () => {
     if (!isRequired) return;
 
     let cancelled = false;
-    let timer;
-
     const handleCancel = () => {
       cancelled = true;
-      if (timer) clearTimeout(timer);
       setIsModalOpen(false);
     };
 
     setModalContent(<CreateQuestionModal onClose={handleCancel} />);
     setIsModalOpen(true);
-    timer = setTimeout(() => {
+
+    try {
+      const data = await postQuestion(buildPayload());
       if (cancelled) return;
       setIsModalOpen(false);
-      navigate('/question-list');
-    }, 3000);
+      const selectedChild = childrenList.find((c) => c.id === selectedChildId) ?? null;
+      navigate('/question-list', {
+        state: { questions: data?.questions ?? [], child: selectedChild },
+      });
+    } catch (error) {
+      if (cancelled) return;
+      console.log('질문지 생성 실패', error);
+      setIsModalOpen(false);
+    }
   };
 
   return (
@@ -135,7 +167,7 @@ export default function CreateQuestion() {
         </h2>
         <div className="h-1 w-full bg-[#FFFCF9]"></div>
         <div className="flex items-center gap-3.25 w-full pl-6 py-6">
-          {CHILDREN.map((child) => {
+          {childrenList.map((child) => {
             const isSelected = selectedChildId === child.id;
             const isFaded = selectedChildId !== null && !isSelected;
             return (

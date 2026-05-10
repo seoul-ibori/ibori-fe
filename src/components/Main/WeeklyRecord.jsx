@@ -167,42 +167,31 @@ const CalendarHeader = ({ textColor = 'text-[#AB4C0A]', year, month, onChange })
   );
 };
 
-function parseRecordYearMonth(date) {
-  const parts = date.split('.');
-  return {
-    year: parseInt(parts[0]?.trim(), 10),
-    month: parseInt(parts[1]?.trim(), 10),
-  };
-}
-
-export default function WeeklyRecord({ childrenList = [], records = [] }) {
+export default function WeeklyRecord({
+  childrenList = [],
+  records = [],
+  year,
+  month,
+  onPeriodChange,
+  selectedChildId,
+  onSelectChild,
+}) {
   const navigate = useNavigate();
-  const today = new Date();
   const [barOpen, setBarOpen] = useState(false);
-  const [selectedChildId, setSelectedChildId] = useState(null);
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth() + 1);
 
   const handlePeriodChange = (y, m) => {
-    setYear(y);
-    setMonth(m);
+    onPeriodChange?.(y, m);
   };
-
-  const filteredRecords = records.filter((r) => {
-    if (selectedChildId && r.childId !== selectedChildId) return false;
-    const { year: ry, month: rm } = parseRecordYearMonth(r.date);
-    return ry === year && rm === month;
-  });
 
   const handleAllClick = () => {
     setBarOpen((prev) => {
-      if (prev) setSelectedChildId(null);
+      if (prev) onSelectChild?.(null);
       return !prev;
     });
   };
 
   const handleChildClick = (childId) => {
-    setSelectedChildId((prev) => (prev === childId ? null : childId));
+    onSelectChild?.(selectedChildId === childId ? null : childId);
   };
 
   return (
@@ -269,10 +258,10 @@ export default function WeeklyRecord({ childrenList = [], records = [] }) {
       </div>
 
       <div className="relative mt-4 px-3.5">
-        {filteredRecords.length > 1 && (
+        {records.length > 1 && (
           <div className="pointer-events-none absolute left-15.5 top-13 bottom-13 border-l-2 border-[#F5DF7A]" />
         )}
-        {filteredRecords.map((record) => (
+        {records.map((record) => (
           <MedicalRecord
             key={record.id}
             hospitalName={record.hospitalName}
