@@ -2,13 +2,21 @@ import { useCallback, useState } from 'react';
 
 export function normalizeEventForEdit(event) {
   if (!event) {
-    return { label: '', color: 'bg-[#FFC721]', location: '', memo: '', time: '오전 10:30' };
+    return {
+      label: '',
+      color: 'bg-[#FFC721]',
+      location: '',
+      memo: '',
+      time: '오전 10:30',
+      childId: '',
+    };
   }
   return {
     ...event,
     location: event.location ?? '',
     memo: event.memo ?? '',
     time: event.time ?? '오전 10:30',
+    childId: event.childId ?? '',
   };
 }
 

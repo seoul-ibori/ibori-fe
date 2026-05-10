@@ -3,9 +3,11 @@ import { useCallback, useState } from 'react';
 import MicrophoneIcon from '@/assets/icons/summary/microphone.svg?react';
 import BottomSheet from '@/components/Summary/BottomSheet';
 import Record from '@/components/Summary/Record';
+import SummaryRecord from '@/components/Summary/SummaryRecord';
 import VoiceChildSelectScreen from '@/components/Summary/VoiceChildSelectScreen';
 import Modal from '@/components/common/Modal';
 import { CELLS, WEEK_DAYS } from '@/constants/calenderDummyData';
+import { formatDateToKoreanMeridiem } from '@/utils/koreanMeridiemTime';
 
 function cloneCells(source) {
   return source.map((cell) => ({
@@ -21,6 +23,9 @@ export default function Calendar() {
   const [isVoiceChildSelectOpen, setIsVoiceChildSelectOpen] = useState(false);
   const [isRecordOpen, setIsRecordOpen] = useState(false);
   const [selectedVoiceChild, setSelectedVoiceChild] = useState(null);
+  const [recordingCellIndex, setRecordingCellIndex] = useState(null);
+  const [scheduleAddPrefill, setScheduleAddPrefill] = useState(null);
+  const [recordingSummaryView, setRecordingSummaryView] = useState(null);
 
   const selectedCell = selectedIndex !== null ? cells[selectedIndex] : null;
 
@@ -39,6 +44,18 @@ export default function Calendar() {
     [selectedIndex]
   );
   const selectedWeekDay = selectedIndex !== null ? WEEK_DAYS[selectedIndex % 7]?.label : '';
+
+  const resolveRecordingCellIndex = useCallback(() => {
+    if (selectedIndex !== null) return selectedIndex;
+    const marked = cells.findIndex((c) => c.selected);
+    if (marked >= 0) return marked;
+    const firstDay = cells.findIndex(
+      (c) => !c.muted && typeof c.day === 'number' && c.day >= 1 && c.day <= 31
+    );
+    return firstDay >= 0 ? firstDay : 0;
+  }, [cells, selectedIndex]);
+
+  const clearSchedulePrefill = useCallback(() => setScheduleAddPrefill(null), []);
 
   return (
     <section className="relative h-[530px] w-full overflow-hidden bg-white px-6 pb-6 pt-[25px]">
@@ -108,7 +125,11 @@ export default function Calendar() {
               {cell.events?.map((event) => (
                 <div
                   key={event.label}
-                  className={`truncate rounded-[2px] px-1 py-0.5 text-[8px] font-medium text-[#FFFCF9] ${event.color}`}
+                  className={`truncate rounded-[2px] px-1 py-0.5 text-[8px] font-medium ${
+                    event.fromRecording
+                      ? 'border border-[#FF3D00] bg-[#FFFCF9] text-[#FF3D00]'
+                      : `text-[#FFFCF9] ${event.color}`
+                  }`}
                 >
                   {event.label}
                 </div>
@@ -157,7 +178,63 @@ export default function Calendar() {
         events={selectedCell?.events ?? []}
         onClose={() => setSelectedIndex(null)}
         onSaveEvents={handleSaveDayEvents}
+        scheduleAddPrefill={scheduleAddPrefill}
+        onScheduleAddPrefillConsumed={clearSchedulePrefill}
+        summaryDateText={selectedCell ? `2026년 4월 ${selectedCell.day}일` : ''}
+        onViewRecordingSummary={(payload) => {
+          setRecordingSummaryView({
+            childName: payload.childName || '우리집 아들',
+            childLabelColor: payload.childLabelColor || '#5AA7FF',
+            summaryDateText: payload.summaryDateText ?? '',
+            eventIndex: typeof payload.eventIndex === 'number' ? payload.eventIndex : -1,
+          });
+        }}
+        onRequestRecording={() => {
+          setSelectedIndex(null);
+          setIsVoiceModalOpen(true);
+        }}
       />
+
+      {recordingSummaryView ? (
+        <SummaryRecord
+          childName={recordingSummaryView.childName}
+          childLabelColor={recordingSummaryView.childLabelColor}
+          summaryDateText={recordingSummaryView.summaryDateText}
+          hideScheduleCta
+          allowSummaryDelete={
+            typeof recordingSummaryView.eventIndex === 'number' &&
+            recordingSummaryView.eventIndex >= 0
+          }
+          onConfirmDeleteSummary={() => {
+            const idx = recordingSummaryView?.eventIndex;
+            if (typeof idx !== 'number' || idx < 0 || selectedIndex === null) {
+              setRecordingSummaryView(null);
+              return;
+            }
+            setCells((prev) => {
+              const copy = [...prev];
+              const cell = copy[selectedIndex];
+              if (!cell?.events || idx >= cell.events.length) return prev;
+              const nextEvents = cell.events.map((e, i) =>
+                i === idx
+                  ? {
+                      ...e,
+                      fromRecording: false,
+                      recordingChildName: undefined,
+                      recordingChildLabelColor: undefined,
+                      childId: undefined,
+                    }
+                  : e
+              );
+              copy[selectedIndex] = { ...cell, events: nextEvents };
+              return copy;
+            });
+            setRecordingSummaryView(null);
+          }}
+          onBack={() => setRecordingSummaryView(null)}
+          onGoToSchedule={() => {}}
+        />
+      ) : null}
 
       <Modal
         isOpen={isVoiceModalOpen}
@@ -171,6 +248,7 @@ export default function Calendar() {
         onConfirm={(child) => {
           if (!child) return;
           setSelectedVoiceChild(child);
+          setRecordingCellIndex(resolveRecordingCellIndex());
           setIsVoiceChildSelectOpen(false);
           setIsRecordOpen(true);
         }}
@@ -179,9 +257,38 @@ export default function Calendar() {
       <Record
         isOpen={isRecordOpen}
         childName={selectedVoiceChild?.name ?? ''}
+        childLabelColor={selectedVoiceChild?.labelColor ?? '#5AA7FF'}
+        recordingCellIndex={recordingCellIndex}
+        summaryDateText={
+          recordingCellIndex != null && cells[recordingCellIndex]
+            ? `2026년 4월 ${cells[recordingCellIndex].day}일`
+            : ''
+        }
         onBack={() => {
           setIsRecordOpen(false);
           setIsVoiceChildSelectOpen(true);
+        }}
+        onOpenScheduleFromSummary={({ completedAt, cellIndex }) => {
+          if (cellIndex == null || cellIndex < 0) return;
+          setScheduleAddPrefill({
+            time: formatDateToKoreanMeridiem(completedAt),
+            location: '',
+            label: '',
+            memo: '',
+            childId: selectedVoiceChild?.id ?? '',
+            highlightHospitalLocation: true,
+            saveButtonLabel: '녹음 저장하기',
+            primaryButtonBgColor: '#B9B2A6',
+            recordingMeta: {
+              childName: selectedVoiceChild?.name ?? '',
+              childLabelColor: selectedVoiceChild?.labelColor ?? '#5AA7FF',
+              medicineText: '항히스타민제 알비다정10mg',
+            },
+          });
+          setIsRecordOpen(false);
+          setIsVoiceChildSelectOpen(false);
+          setIsVoiceModalOpen(false);
+          setSelectedIndex(cellIndex);
         }}
       />
     </section>
