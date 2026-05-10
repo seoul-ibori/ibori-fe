@@ -24,6 +24,7 @@ const underlineInputClass =
   'h-9 w-full border-b border-[#EBE4D9] bg-transparent text-[18px] font-medium text-[#3D3835] outline-none placeholder:font-medium placeholder:text-[#A8A19A]';
 
 const passwordHint = '* 영문, 숫자, 특수문자를 포함해 8자 이상 입력해 주세요.';
+const idHint = '* 아이디는 4~20자로 해주세요.';
 
 function validateSecret(value) {
   if (!value || value.length < 8) return false;
@@ -31,6 +32,10 @@ function validateSecret(value) {
   const hasNumber = /\d/.test(value);
   const hasSpecial = /[^A-Za-z0-9]/.test(value);
   return hasLetter && hasNumber && hasSpecial;
+}
+
+function validateId(value) {
+  return Boolean(value) && value.length >= 4 && value.length <= 20;
 }
 
 export default function SignUpStep1({ method, onSubmit }) {
@@ -61,12 +66,14 @@ export default function SignUpStep1({ method, onSubmit }) {
   const passwordValid = validateSecret(password);
   const familyPasswordValid = validateSecret(familyPassword);
   const passwordMatch = Boolean(password && passwordConfirm && password === passwordConfirm);
+  const userIdValid = validateId(userId);
 
   const showPasswordError = Boolean(password) && !passwordValid;
   const showFamilyPasswordError = Boolean(familyPassword) && !familyPasswordValid;
+  const showUserIdError = Boolean(userId) && !userIdValid;
 
   const allFilled = Boolean(
-    name && userId && passwordValid && passwordMatch && relation && familyPasswordValid
+    name && userIdValid && passwordValid && passwordMatch && relation && familyPasswordValid
   );
 
   const isFirst = method === 'first';
@@ -90,7 +97,7 @@ export default function SignUpStep1({ method, onSubmit }) {
           {headerTitle}
         </p>
       </header>
-      <div className="mt-3.5 h-[15px] bg-[#FAF7F2]" />
+      <div className="mt-3.5 h-3.75 bg-[#FAF7F2]" />
 
       <div className="flex flex-1 flex-col px-6 pt-7">
         <div className="flex flex-col gap-1.25">
@@ -107,13 +114,18 @@ export default function SignUpStep1({ method, onSubmit }) {
               placeholder="이름"
               className={underlineInputClass}
             />
-            <input
-              type="text"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              placeholder="아이디"
-              className={underlineInputClass}
-            />
+            <div>
+              <input
+                type="text"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                placeholder="아이디"
+                className={underlineInputClass}
+              />
+              {showUserIdError && (
+                <p className="mt-2 text-[12px] font-medium text-[#FF3D00]">{idHint}</p>
+              )}
+            </div>
 
             <div>
               <div className="relative">
