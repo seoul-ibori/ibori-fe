@@ -49,7 +49,7 @@ const AISection = () => (
 );
 
 export default function Main() {
-  const isLoggedIn = true; //Boolean(TokenManager.getAccessToken());
+  const isLoggedIn = Boolean(TokenManager.getAccessToken());
 
   if (!isLoggedIn) {
     return <Navigate to="/introduce" replace />;

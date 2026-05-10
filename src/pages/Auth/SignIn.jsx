@@ -1,18 +1,46 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import { TokenManager } from '@/api/api';
+import { demoLogin, login } from '@/api/auth';
 import AppLogoIcon from '@/assets/icons/app_logo_icon.svg?react';
 import LogoIcon from '@/assets/icons/logo_big_icon.svg?react';
 import Button from '@/components/common/Button';
+
+const saveAuthData = (data) => {
+  TokenManager.setTokens({
+    accessToken: data.accessToken,
+    refreshToken: data.refreshToken,
+  });
+  localStorage.setItem('userId', String(data.userId));
+  localStorage.setItem('username', data.username);
+  localStorage.setItem('name', data.name);
+};
 
 export default function SignIn() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: 로그인 API 연결
+    try {
+      const data = await login({ username, password });
+      saveAuthData(data);
+      navigate('/');
+    } catch (error) {
+      console.log('로그인 실패', error);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    try {
+      const data = await demoLogin();
+      saveAuthData(data);
+      navigate('/');
+    } catch (error) {
+      console.log('테스트 로그인 실패', error);
+    }
   };
 
   return (
@@ -52,7 +80,12 @@ export default function SignIn() {
             <Button type="submit" pressedBgColor="#E28702" pressedTextColor="#F5DF7A">
               로그인 하기
             </Button>
-            <Button type="submit" pressedBgColor="#E28702" pressedTextColor="#F5DF7A">
+            <Button
+              type="button"
+              onClick={handleDemoLogin}
+              pressedBgColor="#E28702"
+              pressedTextColor="#F5DF7A"
+            >
               테스트 계정으로 진입하기
             </Button>
             <p className="text-[15px] font-medium text-[#7D7D7D] mt-1.5">
