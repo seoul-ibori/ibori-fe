@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import { getCheckUserName, getCheckfamilyCode } from '@/api/auth';
 import EyeCloseIcon from '@/assets/icons/auth/eye-close-icon.svg?react';
 import EyeOpenIcon from '@/assets/icons/auth/eye-open-icon.svg?react';
 import CheckYellowIcon from '@/assets/icons/check_yellow_icon.svg?react';
@@ -51,6 +52,10 @@ export default function SignUpStep1({ method, onSubmit }) {
   const [familyPassword, setFamilyPassword] = useState(draft.familyPassword ?? '');
   const [showPassword, setShowPassword] = useState(false);
   const [showFamilyPassword, setShowFamilyPassword] = useState(false);
+  const [userIdAvailable, setUserIdAvailable] = useState(null); // null|true|false
+  const [userIdCheckMessage, setUserIdCheckMessage] = useState('');
+  const [familyCodeAvailable, setFamilyCodeAvailable] = useState(null);
+  const [familyCodeCheckMessage, setFamilyCodeCheckMessage] = useState('');
 
   useEffect(() => {
     try {
@@ -72,14 +77,69 @@ export default function SignUpStep1({ method, onSubmit }) {
   const showFamilyPasswordError = Boolean(familyPassword) && !familyPasswordValid;
   const showUserIdError = Boolean(userId) && !userIdValid;
 
-  const allFilled = Boolean(
-    name && userIdValid && passwordValid && passwordMatch && relation && familyPasswordValid
-  );
-
   const isFirst = method === 'first';
   const headerTitle = isFirst ? '가족 중 첫 가입자' : '가족 구성원으로 가입';
   const buttonLabel = isFirst ? '다음' : '회원가입 하기';
   const familyPwdPlaceholder = isFirst ? '가족 고유번호 등록' : '가족 고유번호 입력';
+
+  const allFilled = Boolean(
+    name &&
+    userIdValid &&
+    userIdAvailable === true &&
+    passwordValid &&
+    passwordMatch &&
+    relation &&
+    familyPasswordValid &&
+    (isFirst ? familyCodeAvailable === true : true)
+  );
+
+  const handleUserIdChange = (e) => {
+    setUserId(e.target.value);
+    setUserIdAvailable(null);
+    setUserIdCheckMessage('');
+  };
+
+  const handleFamilyPasswordChange = (e) => {
+    setFamilyPassword(e.target.value);
+    setFamilyCodeAvailable(null);
+    setFamilyCodeCheckMessage('');
+  };
+
+  const handleCheckUserId = async () => {
+    if (!userIdValid) return;
+    try {
+      const data = await getCheckUserName({ username: userId });
+      if (data?.available) {
+        setUserIdAvailable(true);
+        setUserIdCheckMessage('사용 가능한 아이디입니다.');
+      } else {
+        setUserIdAvailable(false);
+        setUserIdCheckMessage('이미 사용 중인 아이디입니다.');
+      }
+    } catch (error) {
+      console.log('아이디 중복 확인 실패', error);
+      setUserIdAvailable(false);
+      setUserIdCheckMessage('중복 확인에 실패했습니다.');
+    }
+  };
+
+  const handleCheckFamilyCode = async () => {
+    if (!familyPasswordValid) return;
+    try {
+      const data = await getCheckfamilyCode({ familyCode: familyPassword });
+      if (data?.available) {
+        setFamilyCodeAvailable(true);
+        setFamilyCodeCheckMessage('사용 가능한 가족 고유번호입니다.');
+      } else {
+        setFamilyCodeAvailable(false);
+        setFamilyCodeCheckMessage('이미 사용 중인 가족 고유번호입니다.');
+      }
+    } catch (error) {
+      console.log('가족 코드 중복 확인 실패', error);
+      setFamilyCodeAvailable(false);
+      setFamilyCodeCheckMessage('중복 확인에 실패했습니다.');
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -115,15 +175,34 @@ export default function SignUpStep1({ method, onSubmit }) {
               className={underlineInputClass}
             />
             <div>
-              <input
-                type="text"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                placeholder="아이디"
-                className={underlineInputClass}
-              />
+              <div className="flex items-end gap-2.5">
+                <input
+                  type="text"
+                  value={userId}
+                  onChange={handleUserIdChange}
+                  placeholder="아이디"
+                  className={`${underlineInputClass} flex-1`}
+                />
+                <button
+                  type="button"
+                  onClick={handleCheckUserId}
+                  disabled={!userIdValid || userIdAvailable === true}
+                  className="h-9 shrink-0 rounded-md bg-[#FFC721] px-3 text-[12px] font-semibold text-[#FFFCF9] disabled:bg-[#E5E0D7] disabled:text-[#FAF7F2]"
+                >
+                  중복확인
+                </button>
+              </div>
               {showUserIdError && (
                 <p className="mt-2 text-[12px] font-medium text-[#FF3D00]">{idHint}</p>
+              )}
+              {!showUserIdError && userIdCheckMessage && (
+                <p
+                  className={`mt-2 text-[12px] font-medium ${
+                    userIdAvailable ? 'text-[#0A8A0A]' : 'text-[#FF3D00]'
+                  }`}
+                >
+                  {userIdCheckMessage}
+                </p>
               )}
             </div>
 
@@ -224,30 +303,53 @@ export default function SignUpStep1({ method, onSubmit }) {
             </div>
 
             <div>
-              <div className="relative">
-                <input
-                  type={showFamilyPassword ? 'text' : 'password'}
-                  value={familyPassword}
-                  onChange={(e) => setFamilyPassword(e.target.value)}
-                  placeholder={familyPwdPlaceholder}
-                  className={`${underlineInputClass} pr-10`}
-                />
-                <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center">
+              <div className="flex items-end gap-2.5">
+                <div className="relative flex-1">
+                  <input
+                    type={showFamilyPassword ? 'text' : 'password'}
+                    value={familyPassword}
+                    onChange={handleFamilyPasswordChange}
+                    placeholder={familyPwdPlaceholder}
+                    className={`${underlineInputClass} pr-10`}
+                  />
+                  <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center">
+                    <button
+                      type="button"
+                      aria-label={
+                        showFamilyPassword ? '가족 고유번호 숨기기' : '가족 고유번호 표시'
+                      }
+                      onClick={() => setShowFamilyPassword((p) => !p)}
+                    >
+                      {showFamilyPassword ? (
+                        <EyeOpenIcon className="size-5" />
+                      ) : (
+                        <EyeCloseIcon className="size-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                {isFirst && (
                   <button
                     type="button"
-                    aria-label={showFamilyPassword ? '가족 고유번호 숨기기' : '가족 고유번호 표시'}
-                    onClick={() => setShowFamilyPassword((p) => !p)}
+                    onClick={handleCheckFamilyCode}
+                    disabled={!familyPasswordValid || familyCodeAvailable === true}
+                    className="h-9 shrink-0 rounded-md bg-[#FFC721] px-3 text-[12px] font-semibold text-[#FFFCF9] disabled:bg-[#E5E0D7] disabled:text-[#FAF7F2]"
                   >
-                    {showFamilyPassword ? (
-                      <EyeOpenIcon className="size-5" />
-                    ) : (
-                      <EyeCloseIcon className="size-5" />
-                    )}
+                    중복확인
                   </button>
-                </div>
+                )}
               </div>
               {showFamilyPasswordError && (
                 <p className="mt-2 text-[12px] font-medium text-[#FF3D00]">{passwordHint}</p>
+              )}
+              {isFirst && !showFamilyPasswordError && familyCodeCheckMessage && (
+                <p
+                  className={`mt-2 text-[12px] font-medium ${
+                    familyCodeAvailable ? 'text-[#0A8A0A]' : 'text-[#FF3D00]'
+                  }`}
+                >
+                  {familyCodeCheckMessage}
+                </p>
               )}
             </div>
           </div>

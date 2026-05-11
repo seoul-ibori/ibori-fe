@@ -69,7 +69,7 @@ privateApi.interceptors.response.use(
     if (!response) return Promise.reject(error);
 
     // 401이 아니거나 이미 재시도한 요청이면 그대로 reject
-    if (response.status !== 401 || originalRequest._retry) {
+    if ((response.status !== 401 && response.status !== 403) || originalRequest._retry) {
       return Promise.reject(error);
     }
 
