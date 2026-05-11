@@ -35,7 +35,7 @@ const router = createBrowserRouter([
     children: [
       { path: '/login', lazy: page(() => import('@/pages/Auth/SignIn')) },
       { path: '/signup', lazy: page(() => import('@/pages/Auth/SignUp')) },
-      { path: '/signup-select', lazy: page(() => import('@/pages/Auth/SIgnUpSelect')) },
+      { path: '/signup-select', lazy: page(() => import('@/pages/Auth/SignUpSelect')) },
       { path: '/introduce', lazy: page(() => import('@/pages/Main/ServiceIntroduce')) },
       { path: '/record-update', lazy: page(() => import('@/pages/Main/RecordUpdate')) },
       { path: '/create-question', lazy: page(() => import('@/pages/Question/CreateQuestion')) },
