@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { TokenManager } from '@/api/api';
+import { deleteFamily, getFamily, patchFamilyCode } from '@/api/family';
 import ChainIcon from '@/assets/icons/settings/chain_icon.svg?react';
 import ChainOrangeIcon from '@/assets/icons/settings/chain_orange_icon.svg?react';
 import ChildIcon from '@/assets/icons/settings/child_icon.svg?react';
-import ChildPlusIcon from '@/assets/icons/settings/child_plus_icon.svg?react';
 import DoorIcon from '@/assets/icons/settings/door_icon.svg?react';
 import HouseIcon from '@/assets/icons/settings/house_icon.svg?react';
 import LetterIcon from '@/assets/icons/settings/letter_box_icon.svg?react';
@@ -18,12 +18,16 @@ import SettingBar from '@/components/Setting/SettingBar';
 import SettingModal from '@/components/Setting/SettingModal';
 import BackButtonIcon from '@/components/common/BackButtonIcon';
 
-const INITIAL_MEMBERS = [
-  { id: '1', role: '엄마', roleColor: '#FF7595', name: '김엄마' },
-  { id: '2', role: '할아버지', roleColor: '#3EB839', name: '김할아버지' },
-];
+const FAMILY_ROLE_MAP = {
+  MOTHER: { label: '엄마', color: '#FF7595' },
+  FATHER: { label: '아빠', color: '#556FFF' },
+  GRANDMOTHER: { label: '할머니', color: '#FEA100' },
+  GRANDFATHER: { label: '할아버지', color: '#3EB839' },
+  SIBLING: { label: '형제', color: '#479DFF' },
+  RELATIVE: { label: '친척', color: '#C682DF' },
+};
 
-const INVITE_LINK = 'https://ibori.app/invite/sample';
+const INVITE_LINK = 'https://ibori.site/login';
 
 function validateFamilyCode(value) {
   if (!value || value.length < 8) return false;
@@ -34,16 +38,35 @@ function validateFamilyCode(value) {
 
 export default function Settings() {
   const navigate = useNavigate();
-  const [members, setMembers] = useState(INITIAL_MEMBERS);
+  const [members, setMembers] = useState([]);
   const [activeModal, setActiveModal] = useState(null); // 'invite' | 'familyCode' | 'logout' | null
   const [familyCode, setFamilyCode] = useState('');
+
+  useEffect(() => {
+    const fetchFamily = async () => {
+      try {
+        const res = await getFamily();
+        setMembers(Array.isArray(res) ? res : []);
+      } catch (error) {
+        console.log('가족 구성원 조회 실패', error);
+      }
+    };
+    fetchFamily();
+  }, []);
 
   const closeModal = () => {
     setActiveModal(null);
     setFamilyCode('');
   };
 
-  const handleDelete = (id) => setMembers((prev) => prev.filter((m) => m.id !== id));
+  const handleDelete = async (memberId) => {
+    try {
+      await deleteFamily(memberId);
+      setMembers((prev) => prev.filter((m) => m.memberId !== memberId));
+    } catch (error) {
+      console.log('가족 구성원 삭제 실패', error);
+    }
+  };
 
   const handleCopyInvite = async () => {
     try {
@@ -54,9 +77,13 @@ export default function Settings() {
     closeModal();
   };
 
-  const handleFamilyCodeSubmit = () => {
+  const handleFamilyCodeSubmit = async () => {
     if (!validateFamilyCode(familyCode)) return;
-    // TODO: 가족 고유번호 변경 API 호출
+    try {
+      await patchFamilyCode({ familyCode });
+    } catch (error) {
+      console.log('가족 코드 변경 실패', error);
+    }
     closeModal();
   };
 
@@ -88,15 +115,20 @@ export default function Settings() {
           <p className="text-[15px] font-semibold text-[#1D1B1A]">가족 구성원</p>
         </div>
         <div className="pl-13.75">
-          {members.map((member) => (
-            <MemberBar
-              key={member.id}
-              role={member.role}
-              roleColor={member.roleColor}
-              name={member.name}
-              onDelete={() => handleDelete(member.id)}
-            />
-          ))}
+          {members.map((member) => {
+            const role = FAMILY_ROLE_MAP[member.familyRole];
+            return (
+              member.memberType !== 'CHILD' && (
+                <MemberBar
+                  key={member.memberId}
+                  role={role?.label ?? member.familyRole}
+                  roleColor={role?.color ?? '#B9B2A6'}
+                  name={member.name}
+                  onDelete={() => handleDelete(member.memberId)}
+                />
+              )
+            );
+          })}
         </div>
       </section>
 
@@ -108,8 +140,11 @@ export default function Settings() {
           label="구성원 추가하기"
           onClick={() => setActiveModal('invite')}
         />
-        <SettingBar icon={<ChildPlusIcon />} label="아이 등록하기" />
-        <SettingBar icon={<ChildIcon />} label="아이 정보 수정하기" />
+        <SettingBar
+          icon={<ChildIcon />}
+          label="아이 정보 수정하기"
+          onClick={() => navigate('/child-list')}
+        />
         <SettingBar
           icon={<LockIcon />}
           label="가족 비밀번호 수정하기"
