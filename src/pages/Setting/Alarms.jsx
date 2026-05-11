@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
-import { getNotification, postReadAll } from '@/api/notification';
+import { getNotification, patchReadAll } from '@/api/notification';
 import AlarmBar from '@/components/Setting/AlarmBar';
 import BackButtonIcon from '@/components/common/BackButtonIcon';
 
@@ -18,7 +18,7 @@ export default function Alarms() {
         console.log('알림 조회 실패', error);
       }
       try {
-        await postReadAll();
+        await patchReadAll();
       } catch (error) {
         console.log('알림 읽음 처리 실패', error);
       }
