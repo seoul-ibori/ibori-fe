@@ -6,6 +6,6 @@ export const getNotification = async () => {
   return res.data;
 };
 
-export const postReadAll = async () => {
+export const patchReadAll = async () => {
   await APIService.private.patch('/notifications/read-all');
 };
