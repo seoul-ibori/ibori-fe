@@ -22,14 +22,24 @@ const FACTOR_CARDS = [
   },
 ];
 
+const LEVEL_COLORS = {
+  매우혼잡: '#FF3D00',
+  '매우 혼잡': '#FF3D00',
+  혼잡: '#AB4C0A',
+  보통: '#FFC721',
+  여유: '#B1CEF0',
+};
+
 export default function CongestionDrawer({
   open,
   onOpenChange,
   snap,
   onSnapChange,
-  location = '중구 서소문동',
-  level = '매우 혼잡',
+  location,
+  level,
 }) {
+  const hasData = Boolean(location && level);
+  const levelColor = LEVEL_COLORS[level] ?? '#706963';
   return (
     <Drawer.Root
       open={open}
@@ -64,15 +74,17 @@ export default function CongestionDrawer({
 
             <div className="mx-auto mt-5 h-px w-85 shrink-0 bg-[#ebe4d9]" />
 
-            <div className="shrink-0 px-6 pt-8 text-center">
-              <p className="text-[21px] font-bold leading-8.25 tracking-[-0.21px] text-[#706963]">
-                {`오늘 ${location},`}
-              </p>
-              <p className="text-[21px] font-bold leading-8.25 tracking-[-0.21px] text-[#706963]">
-                <span className="text-[#ff3d00]">{level}</span>
-                {' 예정입니다'}
-              </p>
-            </div>
+            {hasData && (
+              <div className="shrink-0 px-6 pt-8 text-center">
+                <p className="text-[21px] font-bold leading-8.25 tracking-[-0.21px] text-[#706963]">
+                  {`오늘 ${location},`}
+                </p>
+                <p className="text-[21px] font-bold leading-8.25 tracking-[-0.21px] text-[#706963]">
+                  <span style={{ color: levelColor }}>{level}</span>
+                  {' 예정입니다'}
+                </p>
+              </div>
+            )}
 
             <div className="flex-1 pt-8">
               <div className="border-y-15 border-[#faf7f2] px-6 py-6">
