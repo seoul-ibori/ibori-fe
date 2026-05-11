@@ -2,11 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { TokenManager } from '@/api/api';
-import { deleteFamily, getFamily } from '@/api/family';
+import { deleteFamily, getFamily, patchFamilyCode } from '@/api/family';
 import ChainIcon from '@/assets/icons/settings/chain_icon.svg?react';
 import ChainOrangeIcon from '@/assets/icons/settings/chain_orange_icon.svg?react';
 import ChildIcon from '@/assets/icons/settings/child_icon.svg?react';
-import ChildPlusIcon from '@/assets/icons/settings/child_plus_icon.svg?react';
 import DoorIcon from '@/assets/icons/settings/door_icon.svg?react';
 import HouseIcon from '@/assets/icons/settings/house_icon.svg?react';
 import LetterIcon from '@/assets/icons/settings/letter_box_icon.svg?react';
@@ -78,9 +77,13 @@ export default function Settings() {
     closeModal();
   };
 
-  const handleFamilyCodeSubmit = () => {
+  const handleFamilyCodeSubmit = async () => {
     if (!validateFamilyCode(familyCode)) return;
-    // TODO: 가족 고유번호 변경 API 호출
+    try {
+      await patchFamilyCode({ familyCode });
+    } catch (error) {
+      console.log('가족 코드 변경 실패', error);
+    }
     closeModal();
   };
 
@@ -137,7 +140,11 @@ export default function Settings() {
           label="구성원 추가하기"
           onClick={() => setActiveModal('invite')}
         />
-        <SettingBar icon={<ChildIcon />} label="아이 정보 수정하기" />
+        <SettingBar
+          icon={<ChildIcon />}
+          label="아이 정보 수정하기"
+          onClick={() => navigate('/child-list')}
+        />
         <SettingBar
           icon={<LockIcon />}
           label="가족 비밀번호 수정하기"
