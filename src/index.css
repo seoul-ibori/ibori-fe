@@ -1,1 +1,36 @@
 @import 'tailwindcss';
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+@font-face {
+  font-family: 'Lexend';
+  src: url('/fonts/Lexend-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/fonts/PretendardVariable.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+body {
+  font-family: 'Pretendard', sans-serif;
+}
+
+@layer utilities {
+  /* 스크롤바 숨기기 */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+}

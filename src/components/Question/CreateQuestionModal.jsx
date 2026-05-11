@@ -1,0 +1,57 @@
+import CancelIcon from '@/assets/icons/cancel_button_icon.svg?react';
+import Spinner from '@/components/common/Spinner';
+
+export default function CreateQuestionModal({
+  onClose,
+  title = '잠시만 기다려 주세요\n지금 AI가 질문지를 만들고 있어요',
+  description = '증상과 함께 생활 환경 데이터를 반영해\n질문을 구성하고 있는 중이에요',
+}) {
+  const titleLines = String(title).split('\n');
+  const descriptionLines = String(description).split('\n');
+
+  return (
+    <div className="w-full max-w-85.25 overflow-hidden rounded-[23px] bg-white">
+      <div className="px-5.5 pt-4.75">
+        <button type="button" onClick={onClose} className="flex items-center gap-2">
+          <CancelIcon />
+          <span className="text-[18px] font-medium tracking-[-0.45px] text-[#B9B2A6]">끝내기</span>
+        </button>
+        <div className="mt-2.5 h-px bg-[#EBE4D9]" />
+      </div>
+
+      <div className="flex flex-col items-center gap-3.75 px-6 pt-4.75 pb-7">
+        <Spinner className="size-11.75" />
+        <div className="flex flex-col gap-2.5 text-center">
+          <p className="text-[18px] leading-7 font-bold text-[#1D1B1A]">
+            {titleLines[0]}
+            {titleLines[1] ? (
+              <>
+                <br />
+                {titleLines[1]}
+              </>
+            ) : null}
+          </p>
+          <p className="text-sm leading-[1.541] font-medium text-[#B9B2A6]">
+            {descriptionLines[0]}
+            {descriptionLines[1] ? (
+              <>
+                <br />
+                {descriptionLines[1]}
+              </>
+            ) : null}
+          </p>
+        </div>
+      </div>
+
+      <div className="px-5.5 pb-5.5">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-13 w-full items-center justify-center rounded-[12px] bg-[#B9B2A6] text-[19.091px] font-bold text-[#FAF7F2]"
+        >
+          취소
+        </button>
+      </div>
+    </div>
+  );
+}

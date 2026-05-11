@@ -1,11 +1,12 @@
 import axios from 'axios';
 
 // ─── 환경 변수 및 상수 ──────────────────────────────
-const PUBLIC_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const PRIVATE_API_BASE_URL = import.meta.env.VITE_APP_API_URL || PUBLIC_API_BASE_URL;
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '') + '/api';
+const PUBLIC_API_BASE_URL = BASE_URL;
+const PRIVATE_API_BASE_URL = BASE_URL;
 const REQUEST_TIMEOUT = 10000; // 10초
-const REFRESH_ENDPOINT = '/auths/refresh';
-const LOGIN_PATH = '/admin/login';
+const REFRESH_ENDPOINT = '/auth/refresh';
+const LOGIN_PATH = '/login';
 
 // ─── 토큰 관리 헬퍼 ─────────────────────────────────
 const TokenManager = {
@@ -37,29 +38,16 @@ const createApiInstance = (baseURL, options = {}) =>
   });
 
 /** 토큰이 필요 없는 기본 API 인스턴스 */
-const publicApi = createApiInstance(PUBLIC_API_BASE_URL);
+const publicApi = createApiInstance(PUBLIC_API_BASE_URL, { withCredentials: true });
 
 /** 토큰이 필요한 인증 API 인스턴스 */
-const privateApi = createApiInstance(PRIVATE_API_BASE_URL);
+const privateApi = createApiInstance(PRIVATE_API_BASE_URL, { withCredentials: true });
 
 // ─── 강제 로그아웃 처리 ────────────────────────────
 const forceLogout = () => {
   TokenManager.clear();
   window.location.href = LOGIN_PATH;
 };
-
-// ─── privateApi: 요청 인터셉터 (토큰 자동 첨부) ─────
-privateApi.interceptors.request.use(
-  (config) => {
-    const token = TokenManager.getAccessToken();
-    if (token) {
-      if (!config.headers) config.headers = {};
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
 
 // ─── privateApi: 응답 인터셉터 (토큰 갱신 + 재요청) ─
 let isRefreshing = false;
@@ -81,7 +69,7 @@ privateApi.interceptors.response.use(
     if (!response) return Promise.reject(error);
 
     // 401이 아니거나 이미 재시도한 요청이면 그대로 reject
-    if (response.status !== 401 || originalRequest._retry) {
+    if ((response.status !== 401 && response.status !== 403) || originalRequest._retry) {
       return Promise.reject(error);
     }
 
