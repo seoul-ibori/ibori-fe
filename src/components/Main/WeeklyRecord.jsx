@@ -220,7 +220,7 @@ export default function WeeklyRecord({
           pressedBgColor="#E28702"
           pressedTextColor="#F5DF7A"
         >
-          진료내역 불러오기
+          진료내역 업데이트
         </Button>
       </div>
 

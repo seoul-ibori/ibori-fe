@@ -7,7 +7,7 @@ export default function SignUpDone({ variant = 'full' }) {
   const navigate = useNavigate();
   const isFull = variant === 'full';
 
-  const goToLogin = () => navigate('/login');
+  const goToMain = () => navigate('/');
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -37,13 +37,13 @@ export default function SignUpDone({ variant = 'full' }) {
 
       <div className="px-6 pb-10">
         <Button
-          onClick={goToLogin}
+          onClick={goToMain}
           bgColor="#FFC721"
           textColor="#FFFCF9"
           pressedBgColor="#E28702"
           pressedTextColor="#F5DF7A"
         >
-          로그인 하러가기
+          홈으로 가기
         </Button>
       </div>
     </div>

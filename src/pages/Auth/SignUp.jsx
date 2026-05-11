@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 
+import { TokenManager } from '@/api/api';
 import { signUp } from '@/api/auth';
+import { postMedicalRecords, postMedicalRecords2Way } from '@/api/codef';
 import AuthenticationNeed from '@/components/Auth/AuthenticationNeed';
 import SignUpDone from '@/components/Auth/SignUpDone';
 import SignUpStep1 from '@/components/Auth/SignUpStep1';
@@ -9,8 +11,20 @@ import SignUpStep2 from '@/components/Auth/SignUpStep2';
 
 const VALID_STEPS = new Set(['step1', 'step2', 'auth', 'done']);
 
+const saveAuthData = (data) => {
+  TokenManager.setTokens({
+    accessToken: data.accessToken,
+    refreshToken: data.refreshToken,
+  });
+  localStorage.setItem('userId', String(data.userId));
+  localStorage.setItem('username', data.username);
+  localStorage.setItem('name', data.name);
+};
+
 const STEP1_DRAFT_KEY = 'signup:step1';
 const STEP2_DRAFT_KEY = 'signup:step2';
+const CODEF_BODY_KEY = 'signup:codefBody';
+const CODEF_TWOWAY_KEY = 'signup:codefTwoWayInfo';
 
 const RELATION_TO_ROLE = {
   아빠: 'FATHER',
@@ -20,6 +34,40 @@ const RELATION_TO_ROLE = {
   형제자매: 'SIBLING',
   친척: 'RELATIVE',
 };
+
+const TELECOM_MAP = {
+  'SKT(SKT알뜰폰)': '0',
+  'KT(KT알뜰폰)': '1',
+  'LG U+(LG U+알뜰폰)': '2',
+};
+
+function formatYYYYMMDD(date) {
+  const d = new Date(date);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}${m}${day}`;
+}
+
+function buildCodefBody(step1Draft, step2Data) {
+  return {
+    organization: '0002',
+    loginType: '5',
+    loginTypeLevel: '1',
+    userName: step2Data.name,
+    identity: step2Data.birthDate,
+    phoneNo: step2Data.phone.replace(/\D/g, ''),
+    telecom: TELECOM_MAP[step2Data.telecom] ?? '0',
+    id: step1Draft?.userId ?? '',
+    startDate: formatYYYYMMDD(step2Data.periodStart),
+    endDate: formatYYYYMMDD(step2Data.periodEnd),
+    type: '1',
+    drugImageYN: '0',
+    medicationDirectionYN: '0',
+    detailYN: '0',
+    timeOut: '170',
+  };
+}
 
 function readDraft(key) {
   try {
@@ -68,7 +116,8 @@ export default function SignUp() {
       return;
     }
     try {
-      await signUp(buildSignUpPayload(step1Data, false));
+      const data = await signUp(buildSignUpPayload(step1Data, false));
+      saveAuthData(data);
       clearDraft(STEP1_DRAFT_KEY);
       goToStep('done');
     } catch (error) {
@@ -76,17 +125,38 @@ export default function SignUp() {
     }
   };
 
-  const handleStep2Submit = () => {
-    goToStep('auth');
+  const handleStep2Submit = async (step2Data) => {
+    const step1Draft = readDraft(STEP1_DRAFT_KEY);
+    const codefBody = buildCodefBody(step1Draft, step2Data);
+    try {
+      const result = await postMedicalRecords(codefBody);
+      sessionStorage.setItem(CODEF_BODY_KEY, JSON.stringify(codefBody));
+      sessionStorage.setItem(CODEF_TWOWAY_KEY, JSON.stringify(result?.twoWayInfo ?? {}));
+      goToStep('auth');
+    } catch (error) {
+      console.log('진료기록 1차 요청 실패', error);
+    }
   };
 
   const handleAuthComplete = async () => {
     const step1Draft = readDraft(STEP1_DRAFT_KEY);
-    if (!step1Draft) return;
+    const codefBody = readDraft(CODEF_BODY_KEY);
+    const twoWayInfo = readDraft(CODEF_TWOWAY_KEY);
+    if (!step1Draft || !codefBody) return;
     try {
-      await signUp(buildSignUpPayload(step1Draft, true));
+      const data = await signUp(buildSignUpPayload(step1Draft, true));
+      saveAuthData(data);
+      await postMedicalRecords2Way({
+        ...codefBody,
+        simpleAuth: '1',
+        secureNo: '',
+        secureNoRefresh: '0',
+        twoWayInfo: twoWayInfo ?? {},
+      });
       clearDraft(STEP1_DRAFT_KEY);
       clearDraft(STEP2_DRAFT_KEY);
+      clearDraft(CODEF_BODY_KEY);
+      clearDraft(CODEF_TWOWAY_KEY);
       goToStep('done');
     } catch (error) {
       console.log('회원가입 실패', error);
