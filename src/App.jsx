@@ -45,7 +45,10 @@ const router = createBrowserRouter([
   },
   {
     Component: NotHeaderLayout,
-    children: [{ path: '/settings', lazy: page(() => import('@/pages/Setting/Settings')) }],
+    children: [
+      { path: '/settings', lazy: page(() => import('@/pages/Setting/Settings')) },
+      { path: '/alarms', lazy: page(() => import('@/pages/Setting/Alarms')) },
+    ],
   },
 ]);
 
