@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import NotHeaderLayout from '@/layouts/NotHeaderLayout';
 import RootLayout from '@/layouts/RootLayout';
 import ServiceLayout from '@/layouts/ServiceLayout';
-import ProtectedRoute from '@/router/ProtectedRoute';
 
 const page = (importFn) => () => importFn().then((m) => ({ Component: m.default }));
 
@@ -22,12 +21,6 @@ const router = createBrowserRouter([
       { path: '/', lazy: page(() => import('@/pages/Main/main')) },
       { path: '/summary', lazy: page(() => import('@/pages/Summary')) },
       { path: '/hospital', lazy: page(() => import('@/pages/SearchHospital/SearchHospital')) },
-      {
-        Component: ProtectedRoute,
-        children: [
-          //{ path: "", lazy: page(() => import("파일 경로")) },
-        ],
-      },
     ],
   },
   {

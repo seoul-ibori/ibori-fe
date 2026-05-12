@@ -2,10 +2,25 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/son_icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ibori-fe</title>
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=b3fd38340a55d1bb2db56716db676f20"></script>
+    <meta property="og:title" content="아이보리" />
+    <meta property="og:description" content="맞벌이 가정을 위한 우리아이 종합 건강 관리! 매번 연락 말고 아이보리에서 확인해보세요!!" />
+    <meta property="og:image" content="https://ibori.site/thumbnail_img.png" />
+    <title>아이보리</title>
+    <script
+      src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.0/kakao.min.js"
+      integrity="sha384-l+xbElFSnPZ2rOaPrU//2FF5B4LB8FiX5q4fXYTlfcG4PGpMkE1vcL7kNXI6Cci0"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      window.onload = function() {
+        if (window.Kakao && !window.Kakao.isInitialized()) {
+          window.Kakao.init('b3fd38340a55d1bb2db56716db676f20'); 
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

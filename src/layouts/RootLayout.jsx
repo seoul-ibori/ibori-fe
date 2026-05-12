@@ -1,14 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Outlet, ScrollRestoration } from 'react-router';
 
 import { getChildren } from '@/api/child';
 import Header from '@/components/common/Header';
 import NavBar from '@/components/common/NavBar';
+import Spinner2 from '@/components/common/Spinner2';
+import Toast from '@/components/common/Toast';
 import { useChildrenStore } from '@/store/childrenStore';
 
 export default function RootLayout() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const toastTimerRef = useRef(null);
+
+  const showToast = (message = '잠시후 다시 시도해주세요') => {
+    setToastMessage(message);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToastMessage(''), 2500);
+  };
 
   const setChildren = useChildrenStore((s) => s.setChildren);
 
@@ -30,11 +40,12 @@ export default function RootLayout() {
         <div className="min-h-0 flex-1 flex flex-col">
           <Header />
           <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
-            <Outlet context={{ setIsModalOpen, isModalOpen, setIsLoading }} />
+            <Outlet context={{ setIsModalOpen, isModalOpen, setIsLoading, showToast }} />
           </main>
           <NavBar />
         </div>
-        {isLoading && <Loading />}
+        {isLoading && <Spinner2 />}
+        <Toast message={toastMessage} />
       </div>
       <ScrollRestoration />
     </div>
