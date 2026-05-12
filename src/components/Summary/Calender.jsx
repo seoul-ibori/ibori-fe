@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { TokenManager } from '@/api/api';
+import { getChildren } from '@/api/child';
 import { getMedicalRecord } from '@/api/medicalRecord';
 import MicrophoneIcon from '@/assets/icons/summary/microphone.svg?react';
 import BottomSheet from '@/components/Summary/BottomSheet';
@@ -9,6 +10,7 @@ import SummaryRecord from '@/components/Summary/SummaryRecord';
 import VoiceChildSelectScreen from '@/components/Summary/VoiceChildSelectScreen';
 import Modal from '@/components/common/Modal';
 import { CELLS, WEEK_DAYS } from '@/constants/calenderDummyData';
+import { useChildrenStore } from '@/store/childrenStore';
 import { formatDateToKoreanMeridiem, hhmmToKoreanMeridiem } from '@/utils/koreanMeridiemTime';
 
 /** UI 헤더와 동일 (월 이동 연동 전까지 고정) */
@@ -106,6 +108,8 @@ function cellIndexForCompletedAt(cells, completedAt) {
 }
 
 export default function Calendar() {
+  const childrenRaw = useChildrenStore((s) => s.children);
+  const setChildren = useChildrenStore((s) => s.setChildren);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [cells, setCells] = useState(() => cloneCells(CELLS));
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
@@ -148,6 +152,25 @@ export default function Calendar() {
   }, [cells, selectedIndex]);
 
   const clearSchedulePrefill = useCallback(() => setScheduleAddPrefill(null), []);
+
+  useEffect(() => {
+    if (!TokenManager.getAccessToken()) return;
+    if (childrenRaw.length > 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getChildren();
+        if (cancelled) return;
+        const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+        setChildren(list);
+      } catch (e) {
+        console.error('아이 목록 불러오기 실패', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [childrenRaw.length, setChildren]);
 
   useEffect(() => {
     if (!TokenManager.getAccessToken()) return;
@@ -407,7 +430,9 @@ export default function Calendar() {
       />
 
       <VoiceChildSelectScreen
+        key={`vcs-${isVoiceChildSelectOpen}-${childrenRaw.map((c) => c.childId).join('-') || 'local'}`}
         isOpen={isVoiceChildSelectOpen}
+        children={childrenRaw}
         onClose={() => setIsVoiceChildSelectOpen(false)}
         onConfirm={(child) => {
           if (!child) return;
