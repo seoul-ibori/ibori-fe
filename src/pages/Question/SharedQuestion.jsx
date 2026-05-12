@@ -7,10 +7,26 @@ import ChildrenImgBox from '@/components/common/ChildrenImgBox';
 import ChildrenNameBox from '@/components/common/ChildrenNameBox';
 import PageTitleBox from '@/components/common/PageTitleBox';
 
+const SHARE_SEPARATOR = '';
+
 function decodeShareData(encoded) {
   try {
-    const json = decodeURIComponent(escape(atob(encoded)));
-    return JSON.parse(json);
+    const base64 = encoded
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+      .padEnd(Math.ceil(encoded.length / 4) * 4, '=');
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const text = new TextDecoder().decode(bytes);
+    const parts = text.split(SHARE_SEPARATOR);
+    return {
+      childName: parts[0] ?? '',
+      profileColor: parts[1] ?? 'SKY_BLUE',
+      questions: parts.slice(2),
+    };
   } catch {
     return null;
   }
@@ -18,7 +34,7 @@ function decodeShareData(encoded) {
 
 export default function SharedQuestion() {
   const [searchParams] = useSearchParams();
-  const encoded = searchParams.get('data');
+  const encoded = searchParams.get('d') ?? searchParams.get('data');
   const data = encoded ? decodeShareData(encoded) : null;
 
   const childName = data?.childName ?? '';
