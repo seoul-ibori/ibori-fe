@@ -10,6 +10,32 @@ import ChildrenImgBox from '@/components/common/ChildrenImgBox';
 import ChildrenNameBox from '@/components/common/ChildrenNameBox';
 import PageTitleBox from '@/components/common/PageTitleBox';
 
+const shareToKakao = () => {
+  const { Kakao } = window; // 전역 객체에서 Kakao를 가져옵니다.
+
+  Kakao.Share.sendDefault({
+    objectType: 'feed',
+    content: {
+      title: '아이보리',
+      description: '맞벌이 가정을 위한 우리아이 종합 건강 관리!',
+      imageUrl: 'https://ibori.site/thumbnail_img.png', // 아까 만든 절대 경로!
+      link: {
+        mobileWebUrl: 'https://ibori.site',
+        webUrl: 'https://ibori.site',
+      },
+    },
+    buttons: [
+      {
+        title: '웹으로 보기',
+        link: {
+          mobileWebUrl: 'https://ibori.site',
+          webUrl: 'https://ibori.site',
+        },
+      },
+    ],
+  });
+};
+
 export default function QuestionList() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -93,6 +119,7 @@ export default function QuestionList() {
 
       <div className="flex flex-col gap-3.75 px-7 pb-5">
         <Button
+          onClick={() => shareToKakao()}
           width="w-full"
           bgColor={isEditing ? '#EBE4D9' : '#FFC721'}
           textColor="#FFFCF9"

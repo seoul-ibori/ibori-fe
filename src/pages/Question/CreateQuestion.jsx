@@ -15,7 +15,7 @@ import { useChildrenStore } from '@/store/childrenStore';
 const toChildView = (c) => ({
   id: c.childId,
   name: c.childName,
-  labelColor: PROFILE_COLOR_MAP[c.profileColor] ?? '#5AA7FF',
+  profileColor: c.profileColor ?? 'SKY_BLUE',
 });
 
 const QUESTIONS = [
@@ -171,7 +171,7 @@ export default function CreateQuestion() {
               >
                 <ChildrenBox
                   name={child.name}
-                  labelColor={child.labelColor}
+                  labelColor={child.profileColor}
                   selected={isSelected}
                 />
               </button>
