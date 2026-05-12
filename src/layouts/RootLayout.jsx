@@ -1,12 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, ScrollRestoration } from 'react-router';
 
+import { getChildren } from '@/api/child';
 import Header from '@/components/common/Header';
 import NavBar from '@/components/common/NavBar';
+import { useChildrenStore } from '@/store/childrenStore';
 
 export default function RootLayout() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const setChildren = useChildrenStore((s) => s.setChildren);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getChildren();
+        setChildren(data);
+      } catch (error) {
+        console.log('아이 목록 불러오기 실패', error);
+      }
+    })();
+  }, [setChildren]);
 
   return (
     <div className="bg-gray-50 h-full flex flex-col">
