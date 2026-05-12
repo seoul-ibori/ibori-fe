@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, ScrollRestoration, useLocation } from 'react-router';
 
 import { getChildren } from '@/api/child';
+import Spinner2 from '@/components/common/Spinner2';
 import { useChildrenStore } from '@/store/childrenStore';
 
 export default function ServiceLayout() {
@@ -42,7 +43,7 @@ export default function ServiceLayout() {
             />
           </main>
         </div>
-        {isLoading && <Loading />}
+        {isLoading && <Spinner2 />}
         {isModalOpen && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
             {modalContent}

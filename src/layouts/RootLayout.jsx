@@ -4,6 +4,7 @@ import { Outlet, ScrollRestoration } from 'react-router';
 import { getChildren } from '@/api/child';
 import Header from '@/components/common/Header';
 import NavBar from '@/components/common/NavBar';
+import Spinner2 from '@/components/common/Spinner2';
 import { useChildrenStore } from '@/store/childrenStore';
 
 export default function RootLayout() {
@@ -34,7 +35,7 @@ export default function RootLayout() {
           </main>
           <NavBar />
         </div>
-        {isLoading && <Loading />}
+        {isLoading && <Spinner2 />}
       </div>
       <ScrollRestoration />
     </div>

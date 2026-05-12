@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, ScrollRestoration } from 'react-router';
 
 import { getChildren } from '@/api/child';
+import Spinner2 from '@/components/common/Spinner2';
 import { useChildrenStore } from '@/store/childrenStore';
 
 export default function NotHeaderLayout() {
@@ -35,7 +36,7 @@ export default function NotHeaderLayout() {
             />
           </main>
         </div>
-        {isLoading && <Loading />}
+        {isLoading && <Spinner2 />}
       </div>
       <ScrollRestoration />
     </div>
