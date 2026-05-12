@@ -16,6 +16,7 @@ export default function RootLayout() {
     (async () => {
       try {
         const data = await getChildren();
+        console.log(data);
         setChildren(data);
       } catch (error) {
         console.log('아이 목록 불러오기 실패', error);

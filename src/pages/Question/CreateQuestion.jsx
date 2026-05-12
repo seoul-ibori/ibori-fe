@@ -9,16 +9,8 @@ import StatusQuestionBox from '@/components/Question/StatusQuestionBox';
 import BackButtonIcon from '@/components/common/BackButtonIcon';
 import Button from '@/components/common/Button';
 import PageTitleBox from '@/components/common/PageTitleBox';
+import { PROFILE_COLOR_MAP } from '@/constants/profileColorData';
 import { useChildrenStore } from '@/store/childrenStore';
-
-const PROFILE_COLOR_MAP = {
-  PINK: '#FF8DA1',
-  BLUE: '#5AA7FF',
-  YELLOW: '#FFC721',
-  ORANGE: '#FF8763',
-  GREEN: '#7AC14A',
-  PURPLE: '#A988E0',
-};
 
 const toChildView = (c) => ({
   id: c.childId,

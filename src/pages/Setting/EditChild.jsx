@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { patchChildren } from '@/api/child';
 import EditButton from '@/assets/icons/settings/edit_button_icon.svg?react';
 import EditDoneButton from '@/assets/icons/settings/edit_done_icon.svg?react';
 import ChildIcon from '@/assets/icons/settings/son_icon.svg?react';
 import BackButtonIcon from '@/components/common/BackButtonIcon';
 import Button from '@/components/common/Button';
 import ChildrenImgBox from '@/components/common/ChildrenImgBox';
+import { PROFILE_COLOR_MAP } from '@/constants/profileColorData';
 import { useChildrenStore } from '@/store/childrenStore';
 
 const Bar = () => {
@@ -35,29 +37,58 @@ function OpenButton({ open, color = '#252525', className = '' }) {
   );
 }
 
-const PROFILE_COLOR_MAP = {
-  RED: '#FF759D',
-  PINK: '#FF99FD',
-  BLUE: '#5AA7FF',
-  NAVY: '#5A68FF',
-  YELLOW: '#FFBA00',
-  ORANGE: '#FF8763',
-  GREEN: '#00CC9E',
-  PURPLE: '#AF5AFF',
-};
+function formatBirthDateDisplay(digits) {
+  if (!digits) return '';
+  let result = digits.slice(0, 4);
+  if (digits.length >= 4) result += '년';
+  if (digits.length >= 5) result += ` ${digits.slice(4, 6)}`;
+  if (digits.length >= 6) result += '월';
+  if (digits.length >= 7) result += ` ${digits.slice(6, 8)}`;
+  if (digits.length >= 8) result += '일';
+  return result;
+}
 
 export default function EditChild() {
   const navigate = useNavigate();
   const { id } = useParams();
 
   const [isEditMode, setIsEditMode] = useState(false);
-  const [birth, setBirth] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   const [openArray, setOpenArray] = useState([false, false]);
   const [nickname, setnickName] = useState('');
-  const [optionData, setOptionData] = useState({ height: '', weight: '', point: '' });
+  const [optionData, setOptionData] = useState({ height: '', weight: '', memo: '' });
   const children = useChildrenStore((s) => s.children);
-  const editedChild = children.find((c) => c.childId == id);
-  const [selectedColor, setSelectedColor] = useState(editedChild?.profileColor ?? 'BLUE');
+  const editedChild = children.find((c) => c?.childId == id);
+  const updateChildren = useChildrenStore((s) => s.updateChildren);
+  const [selectedColor, setSelectedColor] = useState(editedChild?.profileColor ?? 'SKY_BLUE');
+
+  const handleEdit = async () => {
+    if (!isEditMode) {
+      setIsEditMode(true);
+      return;
+    }
+    try {
+      const profileData = {};
+      const rawData = {
+        profileColor: selectedColor,
+        birthDate: birthDate,
+        nickname: nickname,
+        height: optionData.height,
+        weight: optionData.weight,
+        memo: optionData.memo,
+      };
+      for (const key in rawData) {
+        if (rawData[key]) {
+          profileData[key] = rawData[key];
+        }
+      }
+      await patchChildren(editedChild.childId, profileData);
+      updateChildren(editedChild.childId, profileData);
+      setIsEditMode(false);
+    } catch (error) {
+      console.log('정보 수정 실패' + error);
+    }
+  };
   return (
     <div className="flex flex-col h-full pb-20 overflow-auto no-scrollbar">
       <div className="px-6 pt-10 pb-2">
@@ -67,7 +98,7 @@ export default function EditChild() {
         <header className="flex justify-between items-center text-[18px] font-semibold mt-7">
           아이 정보 수정하기
           <button
-            onClick={() => setIsEditMode(!isEditMode)}
+            onClick={() => handleEdit()}
             className="flex text-[#AB4C0A] font-medium text-[18px] gap-3"
           >
             {isEditMode && '수정모드'}
@@ -77,7 +108,7 @@ export default function EditChild() {
       </div>
       <Bar />
       <div className="flex items-center p-6.5 gap-5">
-        <ChildrenImgBox className="size-27 rounded-[40%]" />
+        <ChildrenImgBox className="size-27 rounded-[40%]" labelColor={selectedColor} />
         <div className="flex flex-col flex-1 gap-2">
           <ChildIcon className="size-7" />
           <div className="text-[#B9B2A6] text-[18px] font-medium border-b border-[#EBE4D9]">
@@ -85,14 +116,23 @@ export default function EditChild() {
           </div>
           {isEditMode ? (
             <input
-              value={birth}
-              onChange={(e) => setBirth(e.target.value)}
+              value={formatBirthDateDisplay(birthDate)}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                const newDigits = newValue.replace(/\D/g, '');
+                const oldDisplay = formatBirthDateDisplay(birthDate);
+                if (newValue.length < oldDisplay.length && newDigits.length === birthDate.length) {
+                  setBirthDate(birthDate.slice(0, -1));
+                  return;
+                }
+                setBirthDate(newDigits.slice(0, 8));
+              }}
               placeholder="생년월일을 입력해주세요"
               className="w-full outline-none text-[18px] font-medium border-b border-[#EBE4D9]"
             />
           ) : (
             <div className="text-[#B9B2A6] text-[18px] font-medium border-b border-[#EBE4D9]">
-              {editedChild?.birthday ?? '생년월일'}
+              {editedChild?.birthDate ?? '생년월일'}
             </div>
           )}
         </div>
@@ -121,9 +161,13 @@ export default function EditChild() {
                 <div className="flex w-84.25 h-13 rounded-2xl gap-2.5 items-center justify-center bg-[#F0F2F5]">
                   {Object.entries(PROFILE_COLOR_MAP).map(([name, color]) => (
                     <div
-                      style={{ backgroundColor: color }}
-                      className={`rounded-[50%] ${name == selectedColor ? 'w-5 h-5 shadow' : 'w-7 h-7'}`}
-                    />
+                      className={`flex justify-center items-center w-7 h-7 rounded-[50%] ${name == selectedColor ? 'shadow-md' : ''}`}
+                    >
+                      <div
+                        style={{ backgroundColor: color }}
+                        className={`rounded-[50%] ${name == selectedColor ? 'w-5 h-5 shadow' : 'w-7 h-7'}`}
+                      />
+                    </div>
                   ))}
                 </div>
                 <p className='className="w-full border-b border-[#FAF7F2] outline-none my-5 text-[#3D3835] font-medium text-[18px]"'>
@@ -184,7 +228,7 @@ export default function EditChild() {
                   {editedChild?.weight ?? '몸무게'}
                 </p>
                 <p className='className="w-full border-b border-[#FAF7F2] outline-none my-5 text-[#3D3835] font-medium text-[18px]"'>
-                  {editedChild?.point ?? '특징'}
+                  {editedChild?.memo ?? '특징'}
                 </p>
               </div>
             ) : (
@@ -211,10 +255,10 @@ export default function EditChild() {
                 />
                 <input
                   placeholder="특징"
-                  value={optionData.point}
+                  value={optionData.memo}
                   onChange={(e) =>
                     setOptionData((prev) => {
-                      return { ...prev, point: e.target.value };
+                      return { ...prev, memo: e.target.value };
                     })
                   }
                   className="w-full border-b border-[#FAF7F2] outline-none my-5 text-[#3D3835] font-medium text-[18px]"
@@ -227,7 +271,7 @@ export default function EditChild() {
       <Bar />
       {isEditMode && (
         <div className="fixed bottom-3 w-full px-5">
-          <Button onClick={() => setIsEditMode(false)}>저장하기</Button>
+          <Button onClick={() => handleEdit()}>저장하기</Button>
         </div>
       )}
     </div>
