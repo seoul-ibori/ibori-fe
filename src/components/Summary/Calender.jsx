@@ -105,7 +105,7 @@ function cellIndexForCompletedAt(cells, completedAt, year, month) {
   return idx != null ? idx : 0;
 }
 
-export default function Calendar() {
+export default function Calendar({ filterChildId = null }) {
   const childrenRaw = useChildrenStore((s) => s.children);
   const setChildren = useChildrenStore((s) => s.setChildren);
   const [viewYear, setViewYear] = useState(INITIAL_VIEW_YEAR);
@@ -180,6 +180,7 @@ export default function Calendar() {
         const raw = await getMedicalRecord({
           year: viewYear,
           month: viewMonth,
+          childId: filterChildId != null ? filterChildId : undefined,
         });
         if (cancelled) return;
         const list = normalizeMedicalRecordList(raw);
@@ -193,11 +194,11 @@ export default function Calendar() {
     return () => {
       cancelled = true;
     };
-  }, [viewYear, viewMonth]);
+  }, [viewYear, viewMonth, filterChildId]);
 
   return (
-    <section className="relative h-[530px] w-full overflow-hidden bg-white px-6 pb-6 pt-[25px]">
-      <div className="mb-5">
+    <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white px-6 pb-6 pt-5">
+      <div className="mb-5 shrink-0">
         <CalendarPeriodHeader
           textColor="text-[#AB4C0A]"
           year={viewYear}
@@ -210,80 +211,91 @@ export default function Calendar() {
         />
       </div>
 
-      <div className="grid grid-cols-7">
-        {WEEK_DAYS.map((day) => (
-          <div key={day.label} className={`pb-2 text-center text-sm font-bold ${day.color}`}>
-            {day.label}
-          </div>
-        ))}
+      <div className="min-h-0 flex-1 overflow-hidden pb-6">
+        <div className="grid grid-cols-7">
+          {WEEK_DAYS.map((day) => (
+            <div key={day.label} className={`pb-2 text-center text-sm font-bold ${day.color}`}>
+              {day.label}
+            </div>
+          ))}
 
-        {cells.map((cell, index) => (
-          <button
-            type="button"
-            key={`${cell.day}-${index}`}
-            onClick={() => setSelectedIndex(index)}
-            className={`box-border flex h-[81px] flex-col overflow-hidden px-[2px] py-[2px] ${
-              selectedIndex === index ? 'rounded border border-[#FFC721]' : ''
-            }`}
-          >
-            <div
-              className={`flex h-6 shrink-0 items-center justify-center text-[10px] font-bold leading-none ${
-                cell.muted ? 'text-[#252525]/50' : 'text-[#252525]'
+          {cells.map((cell, index) => (
+            <button
+              type="button"
+              key={`${cell.day}-${index}`}
+              onClick={() => setSelectedIndex(index)}
+              className={`box-border flex h-[81px] flex-col overflow-hidden px-[2px] py-[2px] ${
+                selectedIndex === index ? 'rounded border border-[#FFC721]' : ''
               }`}
             >
-              {selectedIndex === index ? (
-                <span className="flex size-[18px] items-center justify-center rounded-full bg-[#FFC721] text-[10px] text-white">
-                  {cell.day}
-                </span>
-              ) : (
-                cell.day
-              )}
-            </div>
-            <div className="min-h-0 flex-1 space-y-0.5 overflow-hidden">
-              {cell.events?.map((event, ei) => (
-                <div
-                  key={
-                    event.recordId != null
-                      ? `r-${event.recordId}`
-                      : `e-${cell.day}-${ei}-${event.label}`
-                  }
-                  className={`truncate rounded-[2px] px-1 py-0.5 text-[8px] font-medium ${
-                    event.fromRecording
-                      ? 'border border-[#FF3D00] bg-[#FFFCF9] text-[#FF3D00]'
-                      : `text-[#FFFCF9] ${event.color}`
-                  }`}
-                >
-                  {event.label}
-                </div>
-              ))}
-            </div>
-          </button>
-        ))}
+              <div
+                className={`flex h-6 shrink-0 items-center justify-center text-[10px] font-bold leading-none ${
+                  cell.muted ? 'text-[#252525]/50' : 'text-[#252525]'
+                }`}
+              >
+                {selectedIndex === index ? (
+                  <span className="flex size-[18px] items-center justify-center rounded-full bg-[#FFC721] text-[10px] text-white">
+                    {cell.day}
+                  </span>
+                ) : (
+                  cell.day
+                )}
+              </div>
+              <div className="min-h-0 flex-1 space-y-0.5 overflow-hidden">
+                {cell.events?.map((event, ei) => (
+                  <div
+                    key={
+                      event.recordId != null
+                        ? `r-${event.recordId}`
+                        : `e-${cell.day}-${ei}-${event.label}`
+                    }
+                    className={`truncate rounded-[2px] px-1 py-0.5 text-[8px] font-medium ${
+                      event.fromRecording
+                        ? 'border border-[#FF3D00] bg-[#FFFCF9] text-[#FF3D00]'
+                        : `text-[#FFFCF9] ${event.color}`
+                    }`}
+                  >
+                    {event.label}
+                  </div>
+                ))}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
 
-      <button
-        type="button"
-        aria-label="음성 입력"
-        onClick={() => {
-          returnToDayIndexRef.current = null;
-          setRecordingOpenedFromSchedule(false);
-          setRecordingRecordId(null);
-          setIsVoiceModalOpen(true);
+      <div
+        className="pointer-events-none fixed inset-x-0 z-[25] flex justify-center"
+        style={{
+          bottom: 'calc(5.75rem + env(safe-area-inset-bottom, 0px))',
         }}
-        className={`absolute bottom-[22px] right-6 z-30 flex size-[68px] items-center justify-center rounded-full text-[30px] text-white shadow-[0_4px_6px_rgba(18,18,23,0.2)] ${
-          isVoiceModalOpen || isVoiceChildSelectOpen || isRecordOpen
-            ? 'bg-[#E28906]'
-            : 'bg-[#FFC722]'
-        }`}
       >
-        <MicrophoneIcon
-          className={`size-10 ${
-            isVoiceModalOpen || isVoiceChildSelectOpen || isRecordOpen
-              ? '[&_rect]:fill-[#E28906]'
-              : '[&_rect]:fill-[#FFC722]'
-          }`}
-        />
-      </button>
+        <div className="pointer-events-auto flex w-full max-w-112.5 justify-end pr-6">
+          <button
+            type="button"
+            aria-label="음성 입력"
+            onClick={() => {
+              returnToDayIndexRef.current = null;
+              setRecordingOpenedFromSchedule(false);
+              setRecordingRecordId(null);
+              setIsVoiceModalOpen(true);
+            }}
+            className={`flex size-[68px] items-center justify-center rounded-full text-[30px] text-white shadow-[0_4px_6px_rgba(18,18,23,0.2)] ${
+              isVoiceModalOpen || isVoiceChildSelectOpen || isRecordOpen
+                ? 'bg-[#E28906]'
+                : 'bg-[#FFC721]'
+            }`}
+          >
+            <MicrophoneIcon
+              className={`size-10 ${
+                isVoiceModalOpen || isVoiceChildSelectOpen || isRecordOpen
+                  ? '[&_rect]:fill-[#E28906]'
+                  : '[&_rect]:fill-[#FFC721]'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
 
       {selectedIndex !== null && (
         <button
