@@ -9,7 +9,7 @@ import ChildrenImgBox from '@/components/common/ChildrenImgBox';
 import ChildrenNameBox from '@/components/common/ChildrenNameBox';
 import PageTitleBox from '@/components/common/PageTitleBox';
 
-const SHARE_SEPARATOR = '';
+const SHARE_SEPARATOR = String.fromCharCode(1);
 
 function decodeShareData(encoded) {
   try {
