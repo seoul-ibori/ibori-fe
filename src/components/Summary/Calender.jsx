@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { TokenManager } from '@/api/api';
 import { getChildren } from '@/api/child';
@@ -108,6 +109,7 @@ function cellIndexForCompletedAt(cells, completedAt, year, month) {
 }
 
 export default function Calendar({ filterChildId = null }) {
+  const navigate = useNavigate();
   const childrenRaw = useChildrenStore((s) => s.children);
   const setChildren = useChildrenStore((s) => s.setChildren);
   const [viewYear, setViewYear] = useState(INITIAL_VIEW_YEAR);
@@ -464,14 +466,15 @@ export default function Calendar({ filterChildId = null }) {
         onBack={() => {
           setIsRecordOpen(false);
           setRecordingRecordId(null);
+          setIsVoiceModalOpen(false);
+          setIsVoiceChildSelectOpen(false);
           if (recordingOpenedFromSchedule) {
             const back = returnToDayIndexRef.current;
             returnToDayIndexRef.current = null;
             setRecordingOpenedFromSchedule(false);
             if (back != null) setSelectedIndex(back);
-            return;
           }
-          setIsVoiceChildSelectOpen(true);
+          navigate('/summary', { replace: true });
         }}
         onOpenScheduleFromSummary={({ completedAt, cellIndex, recordId: aiRecordId }) => {
           const resolvedIdx =
