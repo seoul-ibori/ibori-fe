@@ -12,6 +12,7 @@ import CalendarPeriodHeader from '@/components/common/CalendarPeriodHeader';
 import Modal from '@/components/common/Modal';
 import { CELLS, WEEK_DAYS } from '@/constants/calenderDummyData';
 import { useChildrenStore } from '@/store/childrenStore';
+import { calendarLabelBgClassFromChildren } from '@/utils/calendarChildColor';
 import { formatDateToKoreanMeridiem, hhmmToKoreanMeridiem } from '@/utils/koreanMeridiemTime';
 
 /** 더미 그리드가 맞는 기본 표시 월 (API·날짜 문자열과 동기) */
@@ -28,17 +29,6 @@ function cloneCells(source) {
     ...cell,
     events: cell.events?.map((e) => ({ ...e })),
   }));
-}
-
-const CHILD_EVENT_COLORS = {
-  1: 'bg-[#5AA7FF]',
-  2: 'bg-[#FFC721]',
-  3: 'bg-[#FF8763]',
-};
-
-function eventColorForChildId(childId) {
-  const n = Number(childId);
-  return CHILD_EVENT_COLORS[n] ?? 'bg-[#FFC721]';
 }
 
 function normalizeMedicalRecordList(raw) {
@@ -67,12 +57,24 @@ function findCellIndexForMonthDay(cells, day) {
   return (nonMuted ?? matches[0]).i;
 }
 
-function mergeApiMedicalRecordsIntoCells(baseCells, records, year, month) {
+function mergeApiMedicalRecordsIntoCells(
+  baseCells,
+  records,
+  year,
+  month,
+  childrenRaw,
+  filterChildId
+) {
+  const fid = filterChildId != null && filterChildId !== '' ? String(filterChildId) : null;
   const copy = baseCells.map((cell) => ({
     ...cell,
-    events: cell.events?.filter((e) => e.recordId == null).map((e) => ({ ...e })),
+    events: cell.events
+      ?.filter((e) => e.recordId == null)
+      .filter((e) => fid == null || String(e.childId ?? '').trim() === fid)
+      .map((e) => ({ ...e })),
   }));
   for (const r of records) {
+    if (fid != null && String(r.childId ?? '').trim() !== fid) continue;
     const t = parseTreatDateParts(r.treatDate);
     if (!t || t.y !== year || t.m !== month || !Number.isFinite(t.d)) continue;
     const idx = findCellIndexForMonthDay(copy, t.d);
@@ -82,7 +84,7 @@ function mergeApiMedicalRecordsIntoCells(baseCells, records, year, month) {
       location: r.hospitalName ?? '',
       memo: r.memo ?? '',
       time: hhmmToKoreanMeridiem(r.treatTime),
-      color: eventColorForChildId(r.childId),
+      color: calendarLabelBgClassFromChildren(childrenRaw, r.childId),
       childId: r.childId != null ? String(r.childId) : undefined,
       recordId: r.recordId,
     };
@@ -184,8 +186,15 @@ export default function Calendar({ filterChildId = null }) {
         });
         if (cancelled) return;
         const list = normalizeMedicalRecordList(raw);
-        setCells((prev) =>
-          mergeApiMedicalRecordsIntoCells(cloneCells(prev), list, viewYear, viewMonth)
+        setCells(
+          mergeApiMedicalRecordsIntoCells(
+            cloneCells(CELLS),
+            list,
+            viewYear,
+            viewMonth,
+            childrenRaw,
+            filterChildId
+          )
         );
       } catch (e) {
         console.error('캘린더 진료 기록 불러오기 실패', e);
@@ -194,7 +203,7 @@ export default function Calendar({ filterChildId = null }) {
     return () => {
       cancelled = true;
     };
-  }, [viewYear, viewMonth, filterChildId]);
+  }, [viewYear, viewMonth, filterChildId, childrenRaw]);
 
   return (
     <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white px-6 pb-6 pt-5">
@@ -486,7 +495,7 @@ export default function Calendar({ filterChildId = null }) {
             recordingMeta: {
               childName: selectedVoiceChild?.name ?? '',
               childLabelColor: selectedVoiceChild?.labelColor ?? '#5AA7FF',
-              medicineText: '항히스타민제 알비다정10mg',
+              medicineText: '',
             },
           });
           setIsRecordOpen(false);
