@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useSearchParams } from 'react-router';
+import { useOutletContext, useSearchParams } from 'react-router';
 
 import { TokenManager } from '@/api/api';
 import { signUp } from '@/api/auth';
@@ -99,6 +99,7 @@ function buildSignUpPayload(step1, isFirst) {
 
 export default function SignUp() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { setIsLoading, showToast } = useOutletContext();
   const method = searchParams.get('method'); // 'first' | 'existing'
   const stepParam = searchParams.get('step');
   const step = VALID_STEPS.has(stepParam) ? stepParam : 'step1';
@@ -115,6 +116,7 @@ export default function SignUp() {
       goToStep('step2');
       return;
     }
+    setIsLoading(true);
     try {
       const data = await signUp(buildSignUpPayload(step1Data, false));
       saveAuthData(data);
@@ -122,12 +124,16 @@ export default function SignUp() {
       goToStep('done');
     } catch (error) {
       console.log('회원가입 실패', error);
+      showToast();
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleStep2Submit = async (step2Data) => {
     const step1Draft = readDraft(STEP1_DRAFT_KEY);
     const codefBody = buildCodefBody(step1Draft, step2Data);
+    setIsLoading(true);
     try {
       const result = await postMedicalRecords(codefBody);
       sessionStorage.setItem(CODEF_BODY_KEY, JSON.stringify(codefBody));
@@ -135,6 +141,9 @@ export default function SignUp() {
       goToStep('auth');
     } catch (error) {
       console.log('진료기록 1차 요청 실패', error);
+      showToast();
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -143,6 +152,7 @@ export default function SignUp() {
     const codefBody = readDraft(CODEF_BODY_KEY);
     const twoWayInfo = readDraft(CODEF_TWOWAY_KEY);
     if (!step1Draft || !codefBody) return;
+    setIsLoading(true);
     try {
       const data = await signUp(buildSignUpPayload(step1Draft, true));
       saveAuthData(data);
@@ -160,6 +170,9 @@ export default function SignUp() {
       goToStep('done');
     } catch (error) {
       console.log('회원가입 실패', error);
+      showToast();
+    } finally {
+      setIsLoading(false);
     }
   };
 

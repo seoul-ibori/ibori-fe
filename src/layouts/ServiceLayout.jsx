@@ -1,14 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Outlet, ScrollRestoration, useLocation } from 'react-router';
 
 import { getChildren } from '@/api/child';
 import Spinner2 from '@/components/common/Spinner2';
+import Toast from '@/components/common/Toast';
 import { useChildrenStore } from '@/store/childrenStore';
 
 export default function ServiceLayout() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const toastTimerRef = useRef(null);
+
+  const showToast = (message = '잠시후 다시 시도해주세요') => {
+    setToastMessage(message);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToastMessage(''), 2500);
+  };
+
   const setChildren = useChildrenStore((s) => s.setChildren);
   const { pathname } = useLocation();
 
@@ -39,6 +49,7 @@ export default function ServiceLayout() {
                 isModalOpen,
                 setIsLoading,
                 setModalContent,
+                showToast,
               }}
             />
           </main>
@@ -49,6 +60,7 @@ export default function ServiceLayout() {
             {modalContent}
           </div>
         )}
+        <Toast message={toastMessage} />
       </div>
       <ScrollRestoration />
     </div>

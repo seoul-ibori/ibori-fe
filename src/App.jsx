@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import NotHeaderLayout from '@/layouts/NotHeaderLayout';
 import RootLayout from '@/layouts/RootLayout';
 import ServiceLayout from '@/layouts/ServiceLayout';
-import ProtectedRoute from '@/router/ProtectedRoute';
 
 const page = (importFn) => () => importFn().then((m) => ({ Component: m.default }));
 
