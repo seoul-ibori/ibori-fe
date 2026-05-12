@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import NotHeaderLayout from '@/layouts/NotHeaderLayout';
 import RootLayout from '@/layouts/RootLayout';
 import ServiceLayout from '@/layouts/ServiceLayout';
-import ProtectedRoute from '@/router/ProtectedRoute';
 
 const page = (importFn) => () => importFn().then((m) => ({ Component: m.default }));
 
@@ -22,12 +21,6 @@ const router = createBrowserRouter([
       { path: '/', lazy: page(() => import('@/pages/Main/main')) },
       { path: '/summary', lazy: page(() => import('@/pages/Summary')) },
       { path: '/hospital', lazy: page(() => import('@/pages/SearchHospital/SearchHospital')) },
-      {
-        Component: ProtectedRoute,
-        children: [
-          //{ path: "", lazy: page(() => import("파일 경로")) },
-        ],
-      },
     ],
   },
   {
@@ -35,7 +28,7 @@ const router = createBrowserRouter([
     children: [
       { path: '/login', lazy: page(() => import('@/pages/Auth/SignIn')) },
       { path: '/signup', lazy: page(() => import('@/pages/Auth/SignUp')) },
-      { path: '/signup-select', lazy: page(() => import('@/pages/Auth/SIgnUpSelect')) },
+      { path: '/signup-select', lazy: page(() => import('@/pages/Auth/SignUpSelect')) },
       { path: '/introduce', lazy: page(() => import('@/pages/Main/ServiceIntroduce')) },
       { path: '/record-update', lazy: page(() => import('@/pages/Main/RecordUpdate')) },
       { path: '/create-question', lazy: page(() => import('@/pages/Question/CreateQuestion')) },
@@ -45,7 +38,12 @@ const router = createBrowserRouter([
   },
   {
     Component: NotHeaderLayout,
-    children: [{ path: '/settings', lazy: page(() => import('@/pages/Setting/Settings')) }],
+    children: [
+      { path: '/settings', lazy: page(() => import('@/pages/Setting/Settings')) },
+      { path: '/alarms', lazy: page(() => import('@/pages/Setting/Alarms')) },
+      { path: '/child-list', lazy: page(() => import('@/pages/Setting/ChildList')) },
+      { path: '/edit-child/:id', lazy: page(() => import('@/pages/Setting/EditChild')) },
+    ],
   },
 ]);
 

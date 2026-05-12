@@ -1,22 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router';
+import { Navigate, useOutletContext } from 'react-router';
 
 import { TokenManager } from '@/api/api';
-import { getChildren } from '@/api/child';
 import { getMedicalRecord } from '@/api/medicalRecord';
 import AICreateQuestion from '@/components/Main/AICreateQuestion';
 import Bar from '@/components/Main/Bar';
 import WeeklyRecord from '@/components/Main/WeeklyRecord';
 import { useChildrenStore } from '@/store/childrenStore';
-
-const PROFILE_COLOR_MAP = {
-  PINK: '#FF8DA1',
-  BLUE: '#5AA7FF',
-  YELLOW: '#FFC721',
-  ORANGE: '#FF8763',
-  GREEN: '#7AC14A',
-  PURPLE: '#A988E0',
-};
 
 const formatRecordDate = (treatDate, treatTime) => {
   if (!treatDate || treatDate.length < 8) return '';
@@ -25,12 +15,6 @@ const formatRecordDate = (treatDate, treatTime) => {
   const d = treatDate.slice(6, 8);
   return treatTime ? `${y}. ${m}. ${d}/ ${treatTime}` : `${y}. ${m}. ${d}`;
 };
-
-const mapChild = (c) => ({
-  id: c.childId,
-  name: c.childName,
-  labelColor: PROFILE_COLOR_MAP[c.profileColor] ?? '#5AA7FF',
-});
 
 const mapRecord = (r) => ({
   id: r.recordId,
@@ -55,9 +39,9 @@ const AISection = () => (
 export default function Main() {
   const isLoggedIn = Boolean(TokenManager.getAccessToken());
   const today = new Date();
+  const { setIsLoading, showToast } = useOutletContext();
 
   const children = useChildrenStore((s) => s.children);
-  const setChildren = useChildrenStore((s) => s.setChildren);
 
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
@@ -66,18 +50,7 @@ export default function Main() {
 
   useEffect(() => {
     if (!isLoggedIn) return;
-    (async () => {
-      try {
-        const data = await getChildren();
-        setChildren(data);
-      } catch (error) {
-        console.log('아이 목록 불러오기 실패', error);
-      }
-    })();
-  }, [isLoggedIn, setChildren]);
-
-  useEffect(() => {
-    if (!isLoggedIn) return;
+    setIsLoading(true);
     (async () => {
       try {
         const data = await getMedicalRecord({
@@ -88,6 +61,9 @@ export default function Main() {
         setRecords(data ?? []);
       } catch (error) {
         console.log('진료 기록 불러오기 실패', error);
+        showToast();
+      } finally {
+        setIsLoading(false);
       }
     })();
   }, [isLoggedIn, year, month, selectedChildId]);
@@ -96,14 +72,13 @@ export default function Main() {
     return <Navigate to="/introduce" replace />;
   }
 
-  const childrenList = children.map(mapChild);
   const recordsList = records.map(mapRecord);
 
   return (
     <div className="flex flex-col py-5">
       <Bar />
       <WeeklyRecord
-        childrenList={childrenList}
+        childrenList={children}
         records={recordsList}
         year={year}
         month={month}

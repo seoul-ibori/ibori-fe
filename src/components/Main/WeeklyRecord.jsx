@@ -220,7 +220,7 @@ export default function WeeklyRecord({
           pressedBgColor="#E28702"
           pressedTextColor="#F5DF7A"
         >
-          진료내역 불러오기
+          진료내역 업데이트
         </Button>
       </div>
 
@@ -231,15 +231,15 @@ export default function WeeklyRecord({
               const isFaded = selectedChildId !== null && selectedChildId !== child.id;
               return (
                 <button
-                  key={child.id}
+                  key={child.childId}
                   type="button"
-                  onClick={() => handleChildClick(child.id)}
+                  onClick={() => handleChildClick(child.childId)}
                   className={isFaded ? 'opacity-30' : ''}
                 >
                   <ChildrenBox
-                    name={child.name}
+                    name={child.nickname || child.childName}
                     imageUrl={child.imageUrl}
-                    labelColor={child.labelColor}
+                    labelColor={child.profileColor}
                   />
                 </button>
               );
