@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useOutletContext } from 'react-router';
 
 import { TokenManager } from '@/api/api';
 import { demoLogin, login } from '@/api/auth';
@@ -19,6 +19,7 @@ const saveAuthData = (data) => {
 
 export default function SignIn() {
   const navigate = useNavigate();
+  const { setIsLoading, showToast } = useOutletContext();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -38,6 +39,7 @@ export default function SignIn() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isFormValid) return;
+    setIsLoading(true);
     try {
       const data = await login({ username, password });
       saveAuthData(data);
@@ -45,10 +47,14 @@ export default function SignIn() {
     } catch (error) {
       console.log('로그인 실패', error);
       setErrorMessage('아이디 혹은 비밀번호를 확인해주세요.');
+      showToast();
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleDemoLogin = async () => {
+    setIsLoading(true);
     try {
       const data = await demoLogin();
       saveAuthData(data);
@@ -56,6 +62,9 @@ export default function SignIn() {
     } catch (error) {
       console.log('테스트 로그인 실패', error);
       setErrorMessage('테스트 계정 로그인을 다시 시도해주세요.');
+      showToast();
+    } finally {
+      setIsLoading(false);
     }
   };
 

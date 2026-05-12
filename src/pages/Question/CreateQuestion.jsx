@@ -75,7 +75,7 @@ const initialAnswers = {
 
 export default function CreateQuestion() {
   const navigate = useNavigate();
-  const { setIsModalOpen, setModalContent } = useOutletContext();
+  const { setIsModalOpen, setModalContent, showToast } = useOutletContext();
   const childrenRaw = useChildrenStore((s) => s.children);
   const childrenList = useMemo(() => childrenRaw.map(toChildView), [childrenRaw]);
   const firstChildId = childrenList[0]?.id ?? null;
@@ -121,6 +121,7 @@ export default function CreateQuestion() {
       if (cancelled) return;
       console.log('질문지 생성 실패', error);
       setIsModalOpen(false);
+      showToast();
     }
   };
 

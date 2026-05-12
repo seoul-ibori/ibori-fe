@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router';
+import { Navigate, useOutletContext } from 'react-router';
 
 import { TokenManager } from '@/api/api';
-import { getChildren } from '@/api/child';
 import { getMedicalRecord } from '@/api/medicalRecord';
 import AICreateQuestion from '@/components/Main/AICreateQuestion';
 import Bar from '@/components/Main/Bar';
 import WeeklyRecord from '@/components/Main/WeeklyRecord';
-import { PROFILE_COLOR_MAP } from '@/constants/profileColorData';
 import { useChildrenStore } from '@/store/childrenStore';
 
 const formatRecordDate = (treatDate, treatTime) => {
@@ -41,9 +39,9 @@ const AISection = () => (
 export default function Main() {
   const isLoggedIn = Boolean(TokenManager.getAccessToken());
   const today = new Date();
+  const { setIsLoading, showToast } = useOutletContext();
 
   const children = useChildrenStore((s) => s.children);
-  const setChildren = useChildrenStore((s) => s.setChildren);
 
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
@@ -52,18 +50,7 @@ export default function Main() {
 
   useEffect(() => {
     if (!isLoggedIn) return;
-    (async () => {
-      try {
-        const data = await getChildren();
-        setChildren(data);
-      } catch (error) {
-        console.log('아이 목록 불러오기 실패', error);
-      }
-    })();
-  }, [isLoggedIn, setChildren]);
-
-  useEffect(() => {
-    if (!isLoggedIn) return;
+    setIsLoading(true);
     (async () => {
       try {
         const data = await getMedicalRecord({
@@ -74,6 +61,9 @@ export default function Main() {
         setRecords(data ?? []);
       } catch (error) {
         console.log('진료 기록 불러오기 실패', error);
+        showToast();
+      } finally {
+        setIsLoading(false);
       }
     })();
   }, [isLoggedIn, year, month, selectedChildId]);

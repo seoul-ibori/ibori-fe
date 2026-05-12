@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate, useOutletContext } from 'react-router';
 
 import RobotIcon from '@/assets/icons/question/robot_icon.svg?react';
 import Bar from '@/components/Main/Bar';
@@ -39,6 +39,7 @@ const shareToKakao = () => {
 export default function QuestionList() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { showToast } = useOutletContext();
   const child = location.state?.child ?? null;
   const childLabelColor = child?.profileColor ?? 'SKY_BLUE';
   const childName = child?.name ?? '';
@@ -56,6 +57,15 @@ export default function QuestionList() {
     setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, checked: !q.checked } : q)));
 
   const handleEditToggle = () => setIsEditing((prev) => !prev);
+
+  const handleShare = () => {
+    try {
+      shareToKakao();
+    } catch (error) {
+      console.log('카카오 공유 실패', error);
+      showToast();
+    }
+  };
 
   const visibleQuestions = isEditing ? questions : questions.filter((q) => q.checked);
 
@@ -119,7 +129,7 @@ export default function QuestionList() {
 
       <div className="flex flex-col gap-3.75 px-7 pb-5">
         <Button
-          onClick={() => shareToKakao()}
+          onClick={handleShare}
           width="w-full"
           bgColor={isEditing ? '#EBE4D9' : '#FFC721'}
           textColor="#FFFCF9"

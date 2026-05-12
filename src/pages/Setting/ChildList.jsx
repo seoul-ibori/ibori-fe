@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useOutletContext } from 'react-router';
 
 import { deleteChildren } from '@/api/child';
 import TrashIcon from '@/assets/icons/settings/trash_icon.svg?react';
@@ -9,6 +9,7 @@ import { useChildrenStore } from '@/store/childrenStore';
 
 export default function ChildList() {
   const navigate = useNavigate();
+  const { setIsLoading, showToast } = useOutletContext();
   const [deleteMode, setDeleteMode] = useState(false);
   const children = useChildrenStore((s) => s.children);
   const deleteChild = useChildrenStore((s) => s.deleteChildren);
@@ -17,12 +18,15 @@ export default function ChildList() {
   };
 
   const handleDelete = async (child) => {
+    setIsLoading(true);
     try {
       await deleteChildren(child.childId);
-      console.log('삭제');
       deleteChild(child.childId);
     } catch (error) {
       console.log('아이 삭제 실패' + error);
+      showToast();
+    } finally {
+      setIsLoading(false);
     }
   };
 

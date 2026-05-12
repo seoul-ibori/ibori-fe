@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router';
 
 import { postMedicalRecords, postMedicalRecords2Way } from '@/api/codef';
 import AuthenticationNeed from '@/components/Auth/AuthenticationNeed';
@@ -69,6 +69,7 @@ function clearAllDrafts() {
 export default function RecordUpdate() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { setIsLoading, showToast } = useOutletContext();
   const stepParam = searchParams.get('step');
   const step = VALID_STEPS.has(stepParam) ? stepParam : 'form';
 
@@ -80,6 +81,7 @@ export default function RecordUpdate() {
 
   const handleFormSubmit = async (formData) => {
     const codefBody = buildCodefBody(formData);
+    setIsLoading(true);
     try {
       const result = await postMedicalRecords(codefBody);
       sessionStorage.setItem(CODEF_BODY_KEY, JSON.stringify(codefBody));
@@ -87,6 +89,9 @@ export default function RecordUpdate() {
       goToStep('auth');
     } catch (error) {
       console.log('진료기록 1차 요청 실패', error);
+      showToast();
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -94,6 +99,7 @@ export default function RecordUpdate() {
     const codefBody = readDraft(CODEF_BODY_KEY);
     const twoWayInfo = readDraft(CODEF_TWOWAY_KEY);
     if (!codefBody) return;
+    setIsLoading(true);
     try {
       await postMedicalRecords2Way({
         ...codefBody,
@@ -106,6 +112,9 @@ export default function RecordUpdate() {
       goToStep('done');
     } catch (error) {
       console.log('진료기록 2차 요청 실패', error);
+      showToast();
+    } finally {
+      setIsLoading(false);
     }
   };
 

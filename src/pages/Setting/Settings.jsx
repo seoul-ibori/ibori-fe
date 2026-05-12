@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useOutletContext } from 'react-router';
 
 import { TokenManager } from '@/api/api';
 import { deleteFamily, getFamily, patchFamilyCode } from '@/api/family';
@@ -38,17 +38,22 @@ function validateFamilyCode(value) {
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { setIsLoading, showToast } = useOutletContext();
   const [members, setMembers] = useState([]);
   const [activeModal, setActiveModal] = useState(null); // 'invite' | 'familyCode' | 'logout' | null
   const [familyCode, setFamilyCode] = useState('');
 
   useEffect(() => {
     const fetchFamily = async () => {
+      setIsLoading(true);
       try {
         const res = await getFamily();
         setMembers(Array.isArray(res) ? res : []);
       } catch (error) {
         console.log('가족 구성원 조회 실패', error);
+        showToast();
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchFamily();
@@ -60,11 +65,15 @@ export default function Settings() {
   };
 
   const handleDelete = async (memberId) => {
+    setIsLoading(true);
     try {
       await deleteFamily(memberId);
       setMembers((prev) => prev.filter((m) => m.memberId !== memberId));
     } catch (error) {
       console.log('가족 구성원 삭제 실패', error);
+      showToast();
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -79,10 +88,14 @@ export default function Settings() {
 
   const handleFamilyCodeSubmit = async () => {
     if (!validateFamilyCode(familyCode)) return;
+    setIsLoading(true);
     try {
       await patchFamilyCode({ familyCode });
     } catch (error) {
       console.log('가족 코드 변경 실패', error);
+      showToast();
+    } finally {
+      setIsLoading(false);
     }
     closeModal();
   };

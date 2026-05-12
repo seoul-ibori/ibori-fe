@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useOutletContext } from 'react-router';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { patchChildren } from '@/api/child';
@@ -51,6 +52,7 @@ function formatBirthDateDisplay(digits) {
 export default function EditChild() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { setIsLoading, showToast } = useOutletContext();
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [birthDate, setBirthDate] = useState('');
@@ -67,6 +69,7 @@ export default function EditChild() {
       setIsEditMode(true);
       return;
     }
+    setIsLoading(true);
     try {
       const profileData = {};
       const rawData = {
@@ -87,6 +90,9 @@ export default function EditChild() {
       setIsEditMode(false);
     } catch (error) {
       console.log('정보 수정 실패' + error);
+      showToast();
+    } finally {
+      setIsLoading(false);
     }
   };
   return (

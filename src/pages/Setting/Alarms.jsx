@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useOutletContext } from 'react-router';
 
 import { getNotification, patchReadAll } from '@/api/notification';
 import AlarmBar from '@/components/Setting/AlarmBar';
@@ -7,20 +7,26 @@ import BackButtonIcon from '@/components/common/BackButtonIcon';
 
 export default function Alarms() {
   const navigate = useNavigate();
+  const { setIsLoading, showToast } = useOutletContext();
   const [notiData, setNotiData] = useState([]);
 
   useEffect(() => {
     const init = async () => {
+      setIsLoading(true);
       try {
         const res = await getNotification();
         setNotiData(Array.isArray(res) ? res : []);
       } catch (error) {
         console.log('알림 조회 실패', error);
+        showToast();
       }
       try {
         await patchReadAll();
       } catch (error) {
         console.log('알림 읽음 처리 실패', error);
+        showToast();
+      } finally {
+        setIsLoading(false);
       }
     };
     init();
