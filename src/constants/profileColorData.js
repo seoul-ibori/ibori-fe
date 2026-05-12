@@ -1,0 +1,10 @@
+export const PROFILE_COLOR_MAP = {
+  RED: '#FF759D',
+  PINK: '#FF99FD',
+  SKY_BLUE: '#5AA7FF',
+  BLUE: '#5A68FF',
+  YELLOW: '#FFBA00',
+  ORANGE: '#FF8763',
+  GREEN: '#00CC9E',
+  PURPLE: '#AF5AFF',
+};

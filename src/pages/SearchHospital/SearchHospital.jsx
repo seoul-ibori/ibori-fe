@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CustomOverlayMap } from 'react-kakao-maps-sdk';
+import { useOutletContext } from 'react-router';
 
 import { getDistirctSearch } from '@/api/district';
 import { getHospital } from '@/api/hospital';
@@ -61,6 +62,7 @@ function getIsDay(date = new Date()) {
 }
 
 export default function SearchHospital() {
+  const { setIsLoading, showToast } = useOutletContext();
   const [keyword, setKeyword] = useState('');
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -80,6 +82,7 @@ export default function SearchHospital() {
 
   useEffect(() => {
     let alive = true;
+    setIsLoading(true);
     (async () => {
       try {
         const data = await postPredictDong({ dong: searchLocation.dong });
@@ -89,6 +92,9 @@ export default function SearchHospital() {
         }
       } catch (error) {
         console.log('동 혼잡도 예측 실패', error);
+        if (alive) showToast();
+      } finally {
+        if (alive) setIsLoading(false);
       }
     })();
     return () => {
@@ -98,6 +104,7 @@ export default function SearchHospital() {
 
   useEffect(() => {
     let alive = true;
+    setIsLoading(true);
     (async () => {
       try {
         const data = await getHospital({
@@ -109,6 +116,9 @@ export default function SearchHospital() {
         if (alive) setHospitals(Array.isArray(data) ? data.map(adaptHospital) : []);
       } catch (error) {
         console.log('병원 조회 실패', error);
+        if (alive) showToast();
+      } finally {
+        if (alive) setIsLoading(false);
       }
     })();
     return () => {
@@ -123,12 +133,18 @@ export default function SearchHospital() {
     if (selectedDistrict && selectedDistrict.displayName === keyword) return undefined;
     let alive = true;
     const handle = setTimeout(async () => {
+      setIsLoading(true);
       try {
         const data = await getDistirctSearch({ keyword: trimmed });
         if (alive) setSuggestions(Array.isArray(data) ? data : []);
       } catch (error) {
         console.log('지역 검색 실패', error);
-        if (alive) setSuggestions([]);
+        if (alive) {
+          setSuggestions([]);
+          showToast();
+        }
+      } finally {
+        if (alive) setIsLoading(false);
       }
     }, 250);
     return () => {

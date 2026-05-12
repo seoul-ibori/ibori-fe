@@ -11,19 +11,10 @@ import Button from '@/components/common/Button';
 import PageTitleBox from '@/components/common/PageTitleBox';
 import { useChildrenStore } from '@/store/childrenStore';
 
-const PROFILE_COLOR_MAP = {
-  PINK: '#FF8DA1',
-  BLUE: '#5AA7FF',
-  YELLOW: '#FFC721',
-  ORANGE: '#FF8763',
-  GREEN: '#7AC14A',
-  PURPLE: '#A988E0',
-};
-
 const toChildView = (c) => ({
   id: c.childId,
   name: c.childName,
-  labelColor: PROFILE_COLOR_MAP[c.profileColor] ?? '#5AA7FF',
+  profileColor: c.profileColor ?? 'SKY_BLUE',
 });
 
 const QUESTIONS = [
@@ -84,7 +75,7 @@ const initialAnswers = {
 
 export default function CreateQuestion() {
   const navigate = useNavigate();
-  const { setIsModalOpen, setModalContent } = useOutletContext();
+  const { setIsModalOpen, setModalContent, showToast } = useOutletContext();
   const childrenRaw = useChildrenStore((s) => s.children);
   const childrenList = useMemo(() => childrenRaw.map(toChildView), [childrenRaw]);
   const firstChildId = childrenList[0]?.id ?? null;
@@ -130,6 +121,7 @@ export default function CreateQuestion() {
       if (cancelled) return;
       console.log('질문지 생성 실패', error);
       setIsModalOpen(false);
+      showToast();
     }
   };
 
@@ -179,7 +171,7 @@ export default function CreateQuestion() {
               >
                 <ChildrenBox
                   name={child.name}
-                  labelColor={child.labelColor}
+                  labelColor={child.profileColor}
                   selected={isSelected}
                 />
               </button>

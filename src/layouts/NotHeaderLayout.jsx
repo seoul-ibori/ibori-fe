@@ -1,11 +1,35 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Outlet, ScrollRestoration } from 'react-router';
 
-import NavBar from '@/components/common/NavBar';
+import { getChildren } from '@/api/child';
+import Spinner2 from '@/components/common/Spinner2';
+import Toast from '@/components/common/Toast';
+import { useChildrenStore } from '@/store/childrenStore';
 
 export default function NotHeaderLayout() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const toastTimerRef = useRef(null);
+
+  const showToast = (message = '잠시후 다시 시도해주세요') => {
+    setToastMessage(message);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToastMessage(''), 2500);
+  };
+
+  const setChildren = useChildrenStore((s) => s.setChildren);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getChildren();
+        setChildren(data);
+      } catch (error) {
+        console.log('아이 목록 불러오기 실패', error);
+      }
+    })();
+  }, [setChildren]);
 
   return (
     <div className="bg-gray-50 h-full flex flex-col">
@@ -17,11 +41,13 @@ export default function NotHeaderLayout() {
                 setIsModalOpen,
                 isModalOpen,
                 setIsLoading,
+                showToast,
               }}
             />
           </main>
         </div>
-        {isLoading && <Loading />}
+        {isLoading && <Spinner2 />}
+        <Toast message={toastMessage} />
       </div>
       <ScrollRestoration />
     </div>
