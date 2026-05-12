@@ -9,7 +9,6 @@ import StatusQuestionBox from '@/components/Question/StatusQuestionBox';
 import BackButtonIcon from '@/components/common/BackButtonIcon';
 import Button from '@/components/common/Button';
 import PageTitleBox from '@/components/common/PageTitleBox';
-import { PROFILE_COLOR_MAP } from '@/constants/profileColorData';
 import { useChildrenStore } from '@/store/childrenStore';
 
 const toChildView = (c) => ({
