@@ -33,6 +33,7 @@ const router = createBrowserRouter([
       { path: '/record-update', lazy: page(() => import('@/pages/Main/RecordUpdate')) },
       { path: '/create-question', lazy: page(() => import('@/pages/Question/CreateQuestion')) },
       { path: '/question-list', lazy: page(() => import('@/pages/Question/QuestionList')) },
+      { path: '/shared-question', lazy: page(() => import('@/pages/Question/SharedQuestion')) },
       //{ path: "", lazy: page(() => import("파일 경로")) },
     ],
   },
