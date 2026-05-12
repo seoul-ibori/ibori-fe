@@ -1,4 +1,4 @@
-import intro3Img from '@/assets/images/main/intro3_img.svg';
+import intro3Img from '@/assets/images/main/intro3_img.png';
 
 export default function Intro3() {
   return (
