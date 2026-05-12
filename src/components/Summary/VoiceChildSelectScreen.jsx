@@ -1,16 +1,51 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import BackButtonIcon from '@/components/common/BackButtonIcon';
 import Button from '@/components/common/Button';
 import ChildrenImgBox from '@/components/common/ChildrenImgBox';
+import ChildrenNameBox from '@/components/common/ChildrenNameBox';
+import { PROFILE_COLOR_MAP } from '@/constants/profileColorData';
 import { VOICE_CHILDREN } from '@/constants/voiceChildren';
 
-const CHILDREN = VOICE_CHILDREN;
+/** GET /children 등 API 한 건 → 선택 행용 */
+function mapApiChildToRow(c) {
+  const id = c?.childId != null ? String(c.childId) : c?.id != null ? String(c.id) : '';
+  const nameRaw =
+    (c?.childName && String(c.childName).trim()) || (c?.nickname && String(c.nickname).trim());
+  const name = nameRaw || '아이';
+  const profileColor =
+    typeof c?.profileColor === 'string' && c.profileColor.trim()
+      ? c.profileColor.trim()
+      : 'SKY_BLUE';
+  return { id, name, profileColor };
+}
 
-export default function VoiceChildSelectScreen({ isOpen, onClose, onConfirm = () => {} }) {
-  const [selectedChildId, setSelectedChildId] = useState('2');
+export default function VoiceChildSelectScreen({
+  isOpen,
+  onClose,
+  /** 서버 아이 목록 (`profileColor`: `SKY_BLUE` 등 enum). 비어 있으면 `VOICE_CHILDREN` 폴백 */
+  children: childrenFromApi = null,
+  onConfirm = () => {},
+}) {
+  const rows = useMemo(() => {
+    const raw = Array.isArray(childrenFromApi) ? childrenFromApi : [];
+    if (raw.length > 0) {
+      return raw.map(mapApiChildToRow).filter((r) => r.id);
+    }
+    return VOICE_CHILDREN.map((c) => ({
+      id: String(c.id),
+      name: c.name,
+      profileColor: c.profileColor ?? 'SKY_BLUE',
+    }));
+  }, [childrenFromApi]);
+
+  const [selectedChildId, setSelectedChildId] = useState(() => rows[0]?.id ?? '');
 
   if (!isOpen) return null;
+
+  const effectiveSelectedId = rows.some((r) => r.id === selectedChildId)
+    ? selectedChildId
+    : (rows[0]?.id ?? '');
 
   return (
     <div className="fixed inset-0 z-[80] bg-[#ECECEC]">
@@ -32,8 +67,8 @@ export default function VoiceChildSelectScreen({ isOpen, onClose, onConfirm = ()
         </section>
 
         <section>
-          {CHILDREN.map((child, index) => {
-            const selected = selectedChildId === child.id;
+          {rows.map((child, index) => {
+            const selected = effectiveSelectedId === child.id;
             const rowBg = selected
               ? 'bg-[#A8A19A]'
               : index % 2 === 0
@@ -47,17 +82,17 @@ export default function VoiceChildSelectScreen({ isOpen, onClose, onConfirm = ()
                 className={`flex w-full items-center gap-[18px] px-[26px] py-[17px] text-left ${rowBg}`}
               >
                 <ChildrenImgBox
-                  labelColor={child.labelColor}
+                  labelColor={child.profileColor}
                   selected={selected}
                   className="h-[46.55px] w-[46.554px] rounded-[15.871px]"
                 />
-                <span
-                  className={`text-[18px] font-medium tracking-[-0.72px] ${
-                    selected ? 'text-[#FFFCF9]' : 'text-[#706963]'
-                  }`}
-                >
-                  {child.name}
-                </span>
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <ChildrenNameBox
+                    name={child.name}
+                    labelColor={child.profileColor}
+                    className="w-fit max-w-full rounded-[6px] px-2.5 py-1 text-[13px] font-medium tracking-[-0.52px]"
+                  />
+                </div>
               </button>
             );
           })}
@@ -65,9 +100,19 @@ export default function VoiceChildSelectScreen({ isOpen, onClose, onConfirm = ()
 
         <div className="mt-auto px-5 pb-8">
           <Button
-            onClick={() =>
-              onConfirm(CHILDREN.find((child) => child.id === selectedChildId) ?? null)
-            }
+            onClick={() => {
+              const row = rows.find((c) => c.id === effectiveSelectedId);
+              if (!row) {
+                onConfirm(null);
+                return;
+              }
+              onConfirm({
+                id: row.id,
+                name: row.name,
+                profileColor: row.profileColor,
+                labelColor: PROFILE_COLOR_MAP[row.profileColor] ?? PROFILE_COLOR_MAP.SKY_BLUE,
+              });
+            }}
             bgColor="#FFC721"
             textColor="#FFFFFF"
           >
