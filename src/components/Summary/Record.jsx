@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { postAiSummary } from '@/api/aiSummary';
 import MicrophoneIcon from '@/assets/icons/summary/microphone.svg?react';
 import CreateQuestionModal from '@/components/Question/CreateQuestionModal';
 import RecordStop from '@/components/Summary/RecordStop';
@@ -15,6 +16,14 @@ function formatElapsedTime(totalSeconds) {
   const minutes = String(Math.floor((safe % 3600) / 60)).padStart(2, '0');
   const seconds = String(safe % 60).padStart(2, '0');
   return `${hours}:${minutes}:${seconds}`;
+}
+
+function recordIdFromAiSummaryResponse(data) {
+  if (data == null || typeof data !== 'object') return null;
+  const raw = data.recordId ?? data.id;
+  if (raw == null || raw === '') return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 1 ? n : null;
 }
 
 function RecordingWave({ isRecording, waveHeights = [], cursorIndex = 0 }) {
@@ -65,10 +74,18 @@ function RecordingWave({ isRecording, waveHeights = [], cursorIndex = 0 }) {
   );
 }
 
+/**
+ * 일정이 있는 경우: recordId + childId 로 POST /ai-summaries
+ * 일정 없이 FAB: childId 만으로 POST → 서버가 의료 기록 생성 후 recordId 반환
+ */
 export default function Record({
   isOpen,
+  childId = null,
+  recordId = null,
   childName = '',
   childLabelColor = '#5AA7FF',
+  /** true: 바텀시트 일정에서 들어온 경우(이미 recordId 있음). 요약 후 일정 추가 CTA 숨김 */
+  openedWithScheduleRecord = false,
   recordingCellIndex = null,
   summaryDateText,
   onBack = () => {},
@@ -81,12 +98,19 @@ export default function Record({
   const [recordingCompletedAt, setRecordingCompletedAt] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [micError, setMicError] = useState('');
+  const [summaryError, setSummaryError] = useState('');
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
+  const [summaryRecordId, setSummaryRecordId] = useState(null);
   const [waveHeights, setWaveHeights] = useState(() =>
     Array.from({ length: TOTAL_WAVE_BARS }, () => BASE_WAVE_HEIGHT)
   );
   const [cursorIndex, setCursorIndex] = useState(0);
 
   const mediaStreamRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const audioBlobRef = useRef(null);
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const dataArrayRef = useRef(null);
@@ -95,8 +119,38 @@ export default function Record({
   const cursorIndexRef = useRef(0);
   const smoothedAmplitudeRef = useRef(0);
   const summaryTimeoutRef = useRef(null);
+  const uploadedAudioRef = useRef(false);
+  const uploadPromiseRef = useRef(null);
 
-  const stopMicrophone = () => {
+  const stopRecorderAndGetBlob = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state === 'inactive') {
+      return Promise.resolve(audioBlobRef.current);
+    }
+
+    return new Promise((resolve) => {
+      recorder.addEventListener(
+        'stop',
+        () => {
+          const chunks = audioChunksRef.current.filter((chunk) => chunk.size > 0);
+          if (chunks.length === 0) {
+            resolve(audioBlobRef.current);
+            return;
+          }
+          const blob = new Blob(chunks, {
+            type: chunks[0]?.type || recorder.mimeType || 'audio/webm',
+          });
+          audioBlobRef.current = blob;
+          resolve(blob);
+        },
+        { once: true }
+      );
+      recorder.stop();
+    });
+  }, []);
+
+  const stopMicrophone = useCallback(async () => {
+    const blob = await stopRecorderAndGetBlob();
     if (rafRef.current) {
       window.cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
@@ -113,7 +167,8 @@ export default function Record({
     dataArrayRef.current = null;
     frameCountRef.current = 0;
     smoothedAmplitudeRef.current = 0;
-  };
+    return blob;
+  }, [stopRecorderAndGetBlob]);
 
   const clearSummaryTimeout = () => {
     if (summaryTimeoutRef.current) {
@@ -167,8 +222,22 @@ export default function Record({
   const startMicrophone = async () => {
     try {
       setMicError('');
+      setSummaryError('');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
+
+      const MediaRecorderClass = window.MediaRecorder;
+      if (!MediaRecorderClass) {
+        throw new Error('MEDIA_RECORDER_UNSUPPORTED');
+      }
+      const recorder = new MediaRecorderClass(stream);
+      mediaRecorderRef.current = recorder;
+      recorder.addEventListener('dataavailable', (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      });
+      recorder.start(250);
 
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       if (!AudioContextClass) {
@@ -192,7 +261,6 @@ export default function Record({
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       dataArrayRef.current = dataArray;
 
-      // 버튼 상태를 즉시 반영해서 모바일에서도 활성화가 늦지 않게 합니다.
       setIsRecording(true);
       animateWave();
     } catch (error) {
@@ -200,15 +268,67 @@ export default function Record({
         setMicError('마이크 권한이 차단되어 있어요. 브라우저 설정에서 마이크를 허용해 주세요.');
       } else if (error?.name === 'NotFoundError') {
         setMicError('사용 가능한 마이크를 찾을 수 없어요.');
+      } else if (error?.message === 'MEDIA_RECORDER_UNSUPPORTED') {
+        setMicError('현재 브라우저는 음성 녹음 저장을 지원하지 않아요.');
       } else if (error?.message === 'AUDIO_CONTEXT_UNSUPPORTED') {
         setMicError('현재 브라우저는 오디오 분석을 지원하지 않아요.');
       } else {
         setMicError('마이크를 시작하지 못했어요. 브라우저를 새로고침 후 다시 시도해 주세요.');
       }
-      stopMicrophone();
+      await stopMicrophone();
       setIsRecording(false);
     }
   };
+
+  const uploadRecordingAudio = useCallback(
+    async (blob) => {
+      if (uploadedAudioRef.current) return true;
+      const hasRecordId = recordId != null && recordId !== '';
+      if (!hasRecordId && !childId) {
+        setSummaryError('아이 정보가 없어서 요약을 생성할 수 없어요. 다시 선택해 주세요.');
+        return false;
+      }
+      if (!blob) {
+        setSummaryError('녹음 파일을 찾지 못했어요. 다시 녹음해 주세요.');
+        return false;
+      }
+      if (uploadPromiseRef.current) {
+        return uploadPromiseRef.current;
+      }
+
+      setIsUploadingAudio(true);
+      const pending = (async () => {
+        try {
+          const res = await postAiSummary({
+            ...(hasRecordId ? { recordId } : { childId }),
+            audioFile: blob,
+            fileName: `recording-${Date.now()}.webm`,
+          });
+          uploadedAudioRef.current = true;
+          const rid = recordIdFromAiSummaryResponse(res) ?? (hasRecordId ? Number(recordId) : null);
+          if (rid != null) {
+            setSummaryRecordId(rid);
+          }
+          return true;
+        } catch (error) {
+          const data = error?.response?.data;
+          const msg =
+            (typeof data?.message === 'string' && data.message) ||
+            (typeof data === 'string' ? data : null) ||
+            error?.message ||
+            'AI 요약 생성에 실패했어요. 잠시 후 다시 시도해 주세요.';
+          setSummaryError(msg);
+          return false;
+        } finally {
+          uploadPromiseRef.current = null;
+          setIsUploadingAudio(false);
+        }
+      })();
+      uploadPromiseRef.current = pending;
+      return pending;
+    },
+    [childId, recordId]
+  );
 
   useEffect(() => {
     if (!isRecording || !isOpen) return undefined;
@@ -222,16 +342,16 @@ export default function Record({
 
   useEffect(
     () => () => {
-      stopMicrophone();
+      void stopMicrophone();
       clearSummaryTimeout();
     },
-    []
+    [stopMicrophone]
   );
 
   if (!isOpen) return null;
 
   const handleBack = () => {
-    stopMicrophone();
+    void stopMicrophone();
     setIsRecording(false);
     setIsStopped(false);
     setElapsedSeconds(0);
@@ -240,23 +360,46 @@ export default function Record({
     cursorIndexRef.current = 0;
     setIsSummaryOpen(false);
     setIsSummaryModalOpen(false);
+    setSummaryError('');
     setRecordingCompletedAt(null);
+    setSummaryRecordId(null);
+    audioChunksRef.current = [];
+    audioBlobRef.current = null;
+    uploadedAudioRef.current = false;
+    uploadPromiseRef.current = null;
     clearSummaryTimeout();
     onBack();
   };
 
-  const openSummaryModal = () => {
-    setRecordingCompletedAt(new Date());
-    stopMicrophone();
+  const openSummaryModal = async () => {
+    setSummaryError('');
+    setIsSummarizing(true);
+    const blob = isRecording ? await stopMicrophone() : audioBlobRef.current;
     setIsRecording(false);
+    const uploaded = await uploadRecordingAudio(blob);
+    if (!uploaded) {
+      setIsSummarizing(false);
+      return;
+    }
     setIsStopped(true);
+    setRecordingCompletedAt(new Date());
     setIsSummaryModalOpen(true);
     clearSummaryTimeout();
     summaryTimeoutRef.current = window.setTimeout(() => {
       setIsSummaryModalOpen(false);
       setIsSummaryOpen(true);
+      setIsSummarizing(false);
     }, 1300);
   };
+
+  const displayRecordIdForSummary =
+    summaryRecordId ??
+    (recordId != null &&
+    recordId !== '' &&
+    Number.isFinite(Number(recordId)) &&
+    Number(recordId) >= 1
+      ? Number(recordId)
+      : null);
 
   return (
     <div className="fixed inset-0 z-[90] bg-[#FFFFFF]">
@@ -293,11 +436,17 @@ export default function Record({
             type="button"
             onClick={async () => {
               if (isRecording) {
-                stopMicrophone();
+                setSummaryError('');
+                const blob = await stopMicrophone();
                 setIsRecording(false);
                 setIsStopped(true);
+                void uploadRecordingAudio(blob);
                 return;
               }
+              audioChunksRef.current = [];
+              audioBlobRef.current = null;
+              uploadedAudioRef.current = false;
+              uploadPromiseRef.current = null;
               const resetBars = Array.from({ length: TOTAL_WAVE_BARS }, () => BASE_WAVE_HEIGHT);
               setWaveHeights(resetBars);
               setCursorIndex(0);
@@ -322,10 +471,15 @@ export default function Record({
           <button
             type="button"
             onClick={() => {
-              stopMicrophone();
+              void stopMicrophone();
               setElapsedSeconds(0);
               setIsRecording(false);
               setIsStopped(false);
+              setSummaryError('');
+              audioChunksRef.current = [];
+              audioBlobRef.current = null;
+              uploadedAudioRef.current = false;
+              uploadPromiseRef.current = null;
               const resetBars = Array.from({ length: TOTAL_WAVE_BARS }, () => BASE_WAVE_HEIGHT);
               setWaveHeights(resetBars);
               setCursorIndex(0);
@@ -352,11 +506,19 @@ export default function Record({
           <p className="mt-1 text-[18px] font-bold text-black">바로 AI 요약 기능을 활용해봐요</p>
           <button
             type="button"
-            onClick={openSummaryModal}
-            className="mt-9 h-[52px] w-full rounded-[12px] bg-[#B9B2A6] text-[18px] font-semibold text-[#FAF7F2]"
+            disabled={isSummarizing || isUploadingAudio}
+            onClick={() => void openSummaryModal()}
+            className="mt-9 h-[52px] w-full rounded-[12px] bg-[#B9B2A6] text-[18px] font-semibold text-[#FAF7F2] disabled:opacity-60"
           >
-            의사 선생님 말씀 정리하기
+            {isUploadingAudio
+              ? '녹음 파일 전송 중...'
+              : isSummarizing
+                ? '요약 생성 중...'
+                : '의사 선생님 말씀 정리하기'}
           </button>
+          {summaryError ? (
+            <p className="mt-3 text-center text-sm text-[#FF3D00]">{summaryError}</p>
+          ) : null}
         </section>
       </div>
 
@@ -371,18 +533,25 @@ export default function Record({
         onBack={handleBack}
         onResume={async () => {
           setIsStopped(false);
+          uploadedAudioRef.current = false;
+          uploadPromiseRef.current = null;
           await startMicrophone();
         }}
         onRetry={() => {
-          stopMicrophone();
+          void stopMicrophone();
           setIsRecording(false);
           setIsStopped(false);
           setElapsedSeconds(0);
+          setSummaryError('');
+          audioChunksRef.current = [];
+          audioBlobRef.current = null;
+          uploadedAudioRef.current = false;
+          uploadPromiseRef.current = null;
           setWaveHeights(Array.from({ length: TOTAL_WAVE_BARS }, () => BASE_WAVE_HEIGHT));
           setCursorIndex(0);
           cursorIndexRef.current = 0;
         }}
-        onSummarize={openSummaryModal}
+        onSummarize={() => void openSummaryModal()}
       />
 
       {isSummaryModalOpen ? (
@@ -398,23 +567,22 @@ export default function Record({
         </div>
       ) : null}
 
-      {isSummaryOpen ? (
+      {isSummaryOpen && displayRecordIdForSummary != null ? (
         <SummaryRecord
           childName={childName}
           childLabelColor={childLabelColor}
           summaryDateText={summaryDateText}
+          recordId={displayRecordIdForSummary}
+          scheduleTitle=""
+          hideScheduleCta={openedWithScheduleRecord}
           onBack={() => setIsSummaryOpen(false)}
           onGoToSchedule={() => {
-            if (
-              recordingCompletedAt == null ||
-              recordingCellIndex == null ||
-              recordingCellIndex < 0
-            ) {
-              return;
-            }
+            const completedAt = recordingCompletedAt ?? new Date();
             onOpenScheduleFromSummary({
-              completedAt: recordingCompletedAt,
-              cellIndex: recordingCellIndex,
+              completedAt,
+              cellIndex:
+                recordingCellIndex != null && recordingCellIndex >= 0 ? recordingCellIndex : null,
+              recordId: displayRecordIdForSummary,
             });
           }}
         />

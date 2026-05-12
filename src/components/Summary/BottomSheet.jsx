@@ -46,6 +46,12 @@ function recordIdFromCreateResponse(data) {
   return undefined;
 }
 
+function hexFromTailwindCellColor(colorClass) {
+  if (typeof colorClass !== 'string') return '#5AA7FF';
+  const m = colorClass.match(/#[0-9A-Fa-f]{6}/);
+  return m ? m[0] : '#5AA7FF';
+}
+
 function formatKoreanMeridiemTime(value) {
   if (!value) return '오전 10:30';
   const already = value.match(/^(오전|오후)\s*\d{1,2}:\d{2}$/);
@@ -201,7 +207,18 @@ export default function BottomSheet({
     setHighlightHospitalLocation(Boolean(scheduleAddPrefill.highlightHospitalLocation));
     setAddFormPrimaryLabel(scheduleAddPrefill.saveButtonLabel ?? '추가 일정 저장하기');
     setAddFormPrimaryBg(scheduleAddPrefill.primaryButtonBgColor ?? '#FFC721');
-    setAddFormRecordingMeta(scheduleAddPrefill.recordingMeta ?? null);
+    const metaBase = scheduleAddPrefill.recordingMeta ?? null;
+    const existingId = scheduleAddPrefill.existingRecordId;
+    setAddFormRecordingMeta(
+      metaBase != null || existingId != null
+        ? {
+            ...(metaBase ?? {}),
+            ...(existingId != null && Number.isFinite(Number(existingId)) && Number(existingId) >= 1
+              ? { existingRecordId: Number(existingId) }
+              : {}),
+          }
+        : null
+    );
     /* eslint-enable react-hooks/set-state-in-effect */
     prefillConsumedRef.current?.();
   }, [isOpen, scheduleAddPrefill, handleCancelDeleteMode, exitEditModes]);
@@ -232,17 +249,33 @@ export default function BottomSheet({
         alert('일정 날짜를 확인할 수 없습니다.');
         return;
       }
+      const existingRecordId = addFormRecordingMeta?.existingRecordId;
       setIsPostingSchedule(true);
       try {
-        const postRes = await postMedicalRecord({
-          childId: childIdNum,
-          title: formDraft.label.trim(),
-          hospitalName: (formDraft.location ?? '').trim(),
-          treatDate,
-          treatTime: koreanMeridiemToHHmm(formattedTime),
-          memo: (formDraft.memo ?? '').trim(),
-        });
-        createdRecordId = recordIdFromCreateResponse(postRes);
+        if (
+          existingRecordId != null &&
+          Number.isFinite(Number(existingRecordId)) &&
+          Number(existingRecordId) >= 1
+        ) {
+          await patchMedicalRecord(Number(existingRecordId), {
+            childId: childIdNum,
+            title: formDraft.label.trim(),
+            hospitalName: (formDraft.location ?? '').trim(),
+            treatTime: koreanMeridiemToHHmm(formattedTime),
+            memo: (formDraft.memo ?? '').trim(),
+          });
+          createdRecordId = Number(existingRecordId);
+        } else {
+          const postRes = await postMedicalRecord({
+            childId: childIdNum,
+            title: formDraft.label.trim(),
+            hospitalName: (formDraft.location ?? '').trim(),
+            treatDate,
+            treatTime: koreanMeridiemToHHmm(formattedTime),
+            memo: (formDraft.memo ?? '').trim(),
+          });
+          createdRecordId = recordIdFromCreateResponse(postRes);
+        }
       } catch (err) {
         const data = err?.response?.data;
         const msg =
@@ -590,6 +623,8 @@ export default function BottomSheet({
                           time={rowTime}
                           location={event.location}
                           memo={event.memo}
+                          childId={event.childId}
+                          childLabelColor={hexFromTailwindCellColor(event.color)}
                           childDisplayName={getRegisteredChildFullName(event.childId ?? '')}
                           fromRecording={Boolean(event.fromRecording)}
                           medicineText={event.medicineText ?? '항히스타민제 알비다정10mg'}
@@ -600,9 +635,19 @@ export default function BottomSheet({
                               childLabelColor: event.recordingChildLabelColor ?? '#5AA7FF',
                               summaryDateText,
                               eventIndex: index,
+                              recordId: meta?.recordId ?? event.recordId ?? null,
+                              scheduleTitle: meta?.scheduleTitle ?? event.label ?? '',
                             })
                           }
-                          onAddRecording={onRequestRecording}
+                          onAddRecording={(args) =>
+                            onRequestRecording({
+                              recordId: args?.recordId ?? event.recordId ?? null,
+                              childId: args?.childId ?? event.childId ?? null,
+                              childName: args?.childName ?? '',
+                              childLabelColor:
+                                args?.childLabelColor ?? hexFromTailwindCellColor(event.color),
+                            })
+                          }
                         />
                       ) : null}
                     </>
