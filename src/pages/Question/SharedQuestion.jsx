@@ -1,5 +1,7 @@
 import { useSearchParams } from 'react-router';
 
+import { decompressFromEncodedURIComponent } from 'lz-string';
+
 import RobotIcon from '@/assets/icons/question/robot_icon.svg?react';
 import Bar from '@/components/Main/Bar';
 import QuestionBox from '@/components/Question/QuestionBox';
@@ -11,16 +13,8 @@ const SHARE_SEPARATOR = '';
 
 function decodeShareData(encoded) {
   try {
-    const base64 = encoded
-      .replace(/-/g, '+')
-      .replace(/_/g, '/')
-      .padEnd(Math.ceil(encoded.length / 4) * 4, '=');
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    const text = new TextDecoder().decode(bytes);
+    const text = decompressFromEncodedURIComponent(encoded);
+    if (!text) return null;
     const parts = text.split(SHARE_SEPARATOR);
     return {
       childName: parts[0] ?? '',
