@@ -23,7 +23,7 @@ export default function ServiceLayout() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    const skipPaths = ['/login', '/signup', '/signup-select', '/introduce'];
+    const skipPaths = ['/login', '/signup', '/signup-select', '/introduce', '/shared-question'];
 
     // 2. 현재 경로가 skipPaths에 포함되어 있는지 확인합니다.
     const shouldSkip = skipPaths.includes(pathname);

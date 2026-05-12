@@ -10,14 +10,21 @@ import ChildrenImgBox from '@/components/common/ChildrenImgBox';
 import ChildrenNameBox from '@/components/common/ChildrenNameBox';
 import PageTitleBox from '@/components/common/PageTitleBox';
 
-const shareToKakao = ({ childName, questions }) => {
+const buildSharedQuestionUrl = ({ childName, profileColor, questions }) => {
+  const payload = { childName, profileColor, questions };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  return `https://ibori.site/shared-question?data=${encodeURIComponent(encoded)}`;
+};
+
+const shareToKakao = ({ childName, profileColor, questions }) => {
   const { Kakao } = window;
 
   const title = childName ? `${childName} 진료 질문지` : '아이보리 진료 질문지';
   const description =
     questions.length > 0
-      ? questions.map((q, i) => `${i + 1}. ${q}`).join('\n')
+      ? `진료 전 준비된 질문 ${questions.length}개를 확인해보세요`
       : '맞벌이 가정을 위한 우리아이 종합 건강 관리!';
+  const shareUrl = buildSharedQuestionUrl({ childName, profileColor, questions });
 
   Kakao.Share.sendDefault({
     objectType: 'feed',
@@ -26,16 +33,16 @@ const shareToKakao = ({ childName, questions }) => {
       description,
       imageUrl: 'https://ibori.site/thumbnail.png',
       link: {
-        mobileWebUrl: 'https://ibori.site',
-        webUrl: 'https://ibori.site',
+        mobileWebUrl: shareUrl,
+        webUrl: shareUrl,
       },
     },
     buttons: [
       {
-        title: '웹으로 보기',
+        title: '질문지 보기',
         link: {
-          mobileWebUrl: 'https://ibori.site',
-          webUrl: 'https://ibori.site',
+          mobileWebUrl: shareUrl,
+          webUrl: shareUrl,
         },
       },
     ],
@@ -67,7 +74,11 @@ export default function QuestionList() {
   const handleShare = () => {
     try {
       const checkedTexts = questions.filter((q) => q.checked).map((q) => q.text);
-      shareToKakao({ childName, questions: checkedTexts });
+      shareToKakao({
+        childName,
+        profileColor: child?.profileColor ?? 'SKY_BLUE',
+        questions: checkedTexts,
+      });
     } catch (error) {
       console.log('카카오 공유 실패', error);
       showToast();
