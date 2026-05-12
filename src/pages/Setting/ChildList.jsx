@@ -12,7 +12,7 @@ export default function ChildList() {
   const children = useChildrenStore((s) => s.children);
   const deleteChild = useChildrenStore((s) => s.deleteChild);
   const handleCardClick = (child) => {
-    navigate(`/edit-child?childId=${child.childId}`);
+    navigate(`/edit-child/${child.childId}`);
   };
 
   const handleDelete = (child) => {

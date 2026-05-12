@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Outlet, ScrollRestoration } from 'react-router';
+import { Outlet, ScrollRestoration, useLocation } from 'react-router';
 
 import { getChildren } from '@/api/child';
 import { useChildrenStore } from '@/store/childrenStore';
@@ -9,8 +9,14 @@ export default function ServiceLayout() {
   const [modalContent, setModalContent] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const setChildren = useChildrenStore((s) => s.setChildren);
+  const { pathname } = useLocation();
 
   useEffect(() => {
+    const skipPaths = ['/login', '/signup', '/signup-select', '/introduce'];
+
+    // 2. 현재 경로가 skipPaths에 포함되어 있는지 확인합니다.
+    const shouldSkip = skipPaths.includes(pathname);
+    if (shouldSkip) return;
     (async () => {
       try {
         const data = await getChildren();

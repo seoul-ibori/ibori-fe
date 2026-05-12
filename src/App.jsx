@@ -49,7 +49,7 @@ const router = createBrowserRouter([
       { path: '/settings', lazy: page(() => import('@/pages/Setting/Settings')) },
       { path: '/alarms', lazy: page(() => import('@/pages/Setting/Alarms')) },
       { path: '/child-list', lazy: page(() => import('@/pages/Setting/ChildList')) },
-      { path: '/edit-child', lazy: page(() => import('@/pages/Setting/EditChild')) },
+      { path: '/edit-child/:id', lazy: page(() => import('@/pages/Setting/EditChild')) },
     ],
   },
 ]);
