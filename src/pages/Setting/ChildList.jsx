@@ -1,34 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
-import { getChildren } from '@/api/child';
+import { deleteChildren } from '@/api/child';
 import TrashIcon from '@/assets/icons/settings/trash_icon.svg?react';
 import ChildCard from '@/components/Setting/ChildCard';
 import BackButtonIcon from '@/components/common/BackButtonIcon';
+import { useChildrenStore } from '@/store/childrenStore';
 
 export default function ChildList() {
   const navigate = useNavigate();
-  const [children, setChildren] = useState([]);
   const [deleteMode, setDeleteMode] = useState(false);
-
-  useEffect(() => {
-    const fetchChildren = async () => {
-      try {
-        const data = await getChildren();
-        setChildren(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.log('아이 목록 조회 실패', error);
-      }
-    };
-    fetchChildren();
-  }, []);
-
+  const children = useChildrenStore((s) => s.children);
+  const deleteChild = useChildrenStore((s) => s.deleteChildren);
   const handleCardClick = (child) => {
-    navigate(`/edit-child?childId=${child.childId}`);
+    navigate(`/edit-child/${child.childId}`);
   };
 
-  const handleDelete = (child) => {
-    setChildren((prev) => prev.filter((c) => c.childId !== child.childId));
+  const handleDelete = async (child) => {
+    try {
+      await deleteChildren(child.childId);
+      console.log('삭제');
+      deleteChild(child.childId);
+    } catch (error) {
+      console.log('아이 삭제 실패' + error);
+    }
   };
 
   return (
@@ -68,7 +63,7 @@ export default function ChildList() {
       <div>
         {children.map((child) => (
           <ChildCard
-            key={child.childId}
+            key={child?.childId}
             child={child}
             deleteMode={deleteMode}
             onClick={() => handleCardClick(child)}

@@ -1,16 +1,7 @@
 import RightIcon from '@/assets/icons/settings/arrow_right_icon.svg?react';
-import ChildFaceIcon from '@/assets/icons/settings/child_icon.svg?react';
 import ChildIcon from '@/assets/icons/settings/son_icon.svg?react';
 import ChildrenImgBox from '@/components/common/ChildrenImgBox';
-
-const PROFILE_COLOR_MAP = {
-  PINK: '#FF8DA1',
-  BLUE: '#5AA7FF',
-  YELLOW: '#FFC721',
-  ORANGE: '#FF8763',
-  GREEN: '#7AC14A',
-  PURPLE: '#A988E0',
-};
+import { PROFILE_COLOR_MAP } from '@/constants/profileColorData';
 
 function formatBirthDate(value) {
   if (!value) return null;
@@ -37,7 +28,7 @@ export default function ChildCard({ child, deleteMode = false, onClick, onDelete
           className="flex flex-1 items-center gap-5.25 text-left"
         >
           <ChildrenImgBox
-            labelColor={child.profileColor || '#5AA7FF'}
+            labelColor={child.profileColor ?? 'SKY_BLUE'}
             className="size-29 rounded-[42px]"
           />
           <div className="flex min-w-0 flex-1 flex-col gap-4.75">

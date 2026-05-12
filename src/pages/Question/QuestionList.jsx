@@ -14,7 +14,7 @@ export default function QuestionList() {
   const navigate = useNavigate();
   const location = useLocation();
   const child = location.state?.child ?? null;
-  const childLabelColor = child?.labelColor ?? '#FFC721';
+  const childLabelColor = child?.profileColor ?? 'SKY_BLUE';
   const childName = child?.name ?? '';
 
   const initialQuestions = (location.state?.questions ?? []).map((text, idx) => ({
