@@ -22,12 +22,6 @@ const router = createBrowserRouter([
       { path: '/', lazy: page(() => import('@/pages/Main/main')) },
       { path: '/summary', lazy: page(() => import('@/pages/Summary')) },
       { path: '/hospital', lazy: page(() => import('@/pages/SearchHospital/SearchHospital')) },
-      {
-        Component: ProtectedRoute,
-        children: [
-          //{ path: "", lazy: page(() => import("파일 경로")) },
-        ],
-      },
     ],
   },
   {
