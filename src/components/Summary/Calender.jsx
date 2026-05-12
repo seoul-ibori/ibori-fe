@@ -8,18 +8,19 @@ import BottomSheet from '@/components/Summary/BottomSheet';
 import Record from '@/components/Summary/Record';
 import SummaryRecord from '@/components/Summary/SummaryRecord';
 import VoiceChildSelectScreen from '@/components/Summary/VoiceChildSelectScreen';
+import CalendarPeriodHeader from '@/components/common/CalendarPeriodHeader';
 import Modal from '@/components/common/Modal';
 import { CELLS, WEEK_DAYS } from '@/constants/calenderDummyData';
 import { useChildrenStore } from '@/store/childrenStore';
 import { formatDateToKoreanMeridiem, hhmmToKoreanMeridiem } from '@/utils/koreanMeridiemTime';
 
-/** UI 헤더와 동일 (월 이동 연동 전까지 고정) */
-const CALENDAR_YEAR = 2026;
-const CALENDAR_MONTH = 4;
+/** 더미 그리드가 맞는 기본 표시 월 (API·날짜 문자열과 동기) */
+const INITIAL_VIEW_YEAR = 2026;
+const INITIAL_VIEW_MONTH = 4;
 
-function toTreatDateYmd(day) {
+function toTreatDateYmd(year, month, day) {
   if (typeof day !== 'number' || day < 1 || day > 31) return '';
-  return `${CALENDAR_YEAR}${String(CALENDAR_MONTH).padStart(2, '0')}${String(day).padStart(2, '0')}`;
+  return `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`;
 }
 
 function cloneCells(source) {
@@ -92,12 +93,9 @@ function mergeApiMedicalRecordsIntoCells(baseCells, records, year, month) {
   return copy;
 }
 
-function cellIndexForCompletedAt(cells, completedAt) {
+function cellIndexForCompletedAt(cells, completedAt, year, month) {
   if (!(completedAt instanceof Date) || Number.isNaN(completedAt.getTime())) return null;
-  if (
-    completedAt.getFullYear() !== CALENDAR_YEAR ||
-    completedAt.getMonth() + 1 !== CALENDAR_MONTH
-  ) {
+  if (completedAt.getFullYear() !== year || completedAt.getMonth() + 1 !== month) {
     const first = cells.findIndex(
       (c) => !c.muted && typeof c.day === 'number' && c.day >= 1 && c.day <= 31
     );
@@ -110,6 +108,8 @@ function cellIndexForCompletedAt(cells, completedAt) {
 export default function Calendar() {
   const childrenRaw = useChildrenStore((s) => s.children);
   const setChildren = useChildrenStore((s) => s.setChildren);
+  const [viewYear, setViewYear] = useState(INITIAL_VIEW_YEAR);
+  const [viewMonth, setViewMonth] = useState(INITIAL_VIEW_MONTH);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [cells, setCells] = useState(() => cloneCells(CELLS));
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
@@ -178,13 +178,13 @@ export default function Calendar() {
     (async () => {
       try {
         const raw = await getMedicalRecord({
-          year: CALENDAR_YEAR,
-          month: CALENDAR_MONTH,
+          year: viewYear,
+          month: viewMonth,
         });
         if (cancelled) return;
         const list = normalizeMedicalRecordList(raw);
         setCells((prev) =>
-          mergeApiMedicalRecordsIntoCells(cloneCells(prev), list, CALENDAR_YEAR, CALENDAR_MONTH)
+          mergeApiMedicalRecordsIntoCells(cloneCells(prev), list, viewYear, viewMonth)
         );
       } catch (e) {
         console.error('캘린더 진료 기록 불러오기 실패', e);
@@ -193,41 +193,21 @@ export default function Calendar() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [viewYear, viewMonth]);
 
   return (
     <section className="relative h-[530px] w-full overflow-hidden bg-white px-6 pb-6 pt-[25px]">
-      <div className="mb-5 flex h-[39px] items-center justify-between">
-        <button
-          type="button"
-          aria-label="이전 달"
-          className="flex size-[39px] items-center justify-center rounded-full bg-white text-[39px] leading-none text-[#0B1324] shadow-[0_0.9px_0.45px_rgba(0,14,51,0.05)]"
-        >
-          ‹
-        </button>
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            className="flex items-center gap-0.5 rounded-md bg-white px-[10px] py-[9px] text-[21px] font-bold leading-none text-[#5F3010] tracking-[-0.21px] shadow-[0_0.8px_0.4px_rgba(0,14,51,0.05)]"
-            style={{ fontFamily: 'Lexend, sans-serif' }}
-          >
-            2026년 <span className="text-[11px] text-[#FFC721]">▼</span>
-          </button>
-          <button
-            type="button"
-            className="flex items-center gap-0.5 rounded-md bg-white px-[10px] py-[9px] text-[21px] font-bold leading-none text-[#5F3010] tracking-[-0.21px] shadow-[0_0.8px_0.4px_rgba(0,14,51,0.05)]"
-            style={{ fontFamily: 'Lexend, sans-serif' }}
-          >
-            4월 <span className="text-[11px] text-[#FFC721]">▼</span>
-          </button>
-        </div>
-        <button
-          type="button"
-          aria-label="다음 달"
-          className="flex size-[39px] items-center justify-center rounded-full bg-white text-[39px] leading-none text-[#0B1324] shadow-[0_0.9px_0.45px_rgba(0,14,51,0.05)]"
-        >
-          ›
-        </button>
+      <div className="mb-5">
+        <CalendarPeriodHeader
+          textColor="text-[#AB4C0A]"
+          year={viewYear}
+          month={viewMonth}
+          onChange={(y, m) => {
+            setViewYear(y);
+            setViewMonth(m);
+          }}
+          className=""
+        />
       </div>
 
       <div className="grid grid-cols-7">
@@ -321,14 +301,16 @@ export default function Calendar() {
             : 'sheet-closed'
         }
         isOpen={selectedIndex !== null}
-        selectedLabel={selectedCell ? `4월 ${selectedCell.day}일 ${selectedWeekDay}요일` : ''}
+        selectedLabel={
+          selectedCell ? `${viewMonth}월 ${selectedCell.day}일 ${selectedWeekDay}요일` : ''
+        }
         events={selectedCell?.events ?? []}
         onClose={() => setSelectedIndex(null)}
         onSaveEvents={handleSaveDayEvents}
-        treatDate={selectedCell ? toTreatDateYmd(selectedCell.day) : ''}
+        treatDate={selectedCell ? toTreatDateYmd(viewYear, viewMonth, selectedCell.day) : ''}
         scheduleAddPrefill={scheduleAddPrefill}
         onScheduleAddPrefillConsumed={clearSchedulePrefill}
-        summaryDateText={selectedCell ? `2026년 4월 ${selectedCell.day}일` : ''}
+        summaryDateText={selectedCell ? `${viewYear}년 ${viewMonth}월 ${selectedCell.day}일` : ''}
         onViewRecordingSummary={(payload) => {
           const rawRid = payload?.recordId;
           const recordIdNum =
@@ -455,7 +437,7 @@ export default function Calendar() {
         recordingCellIndex={recordingCellIndex}
         summaryDateText={
           recordingCellIndex != null && cells[recordingCellIndex]
-            ? `2026년 4월 ${cells[recordingCellIndex].day}일`
+            ? `${viewYear}년 ${viewMonth}월 ${cells[recordingCellIndex].day}일`
             : ''
         }
         onBack={() => {
@@ -474,7 +456,7 @@ export default function Calendar() {
           const resolvedIdx =
             cellIndex != null && cellIndex >= 0
               ? cellIndex
-              : cellIndexForCompletedAt(cells, completedAt);
+              : cellIndexForCompletedAt(cells, completedAt, viewYear, viewMonth);
           if (resolvedIdx == null || resolvedIdx < 0) return;
           setScheduleAddPrefill({
             time: formatDateToKoreanMeridiem(completedAt),

@@ -9,9 +9,10 @@ import { SwipeableEventRow } from '@/components/Summary/CalendarDelete';
 import CalenderEdit from '@/components/Summary/CalenderEdit';
 import CalenderForm from '@/components/Summary/CalenderForm';
 import Button from '@/components/common/Button';
-import { getRegisteredChildFullName } from '@/constants/voiceChildren';
 import { useCalendarDelete } from '@/hooks/useCalendarDelete';
 import { normalizeEventForEdit, useCalendarEdit } from '@/hooks/useCalendarEdit';
+import { useChildrenStore } from '@/store/childrenStore';
+import { childLegalNameFromList } from '@/utils/childDisplayName';
 import { koreanMeridiemToHHmm } from '@/utils/koreanMeridiemTime';
 
 function EventRow({ title, time, trailing, fromRecording = false }) {
@@ -108,6 +109,8 @@ export default function BottomSheet({
 
   const { editPhase, editingIndex, exitEditModes, enterEditList, openEditForm, backToEditList } =
     useCalendarEdit();
+
+  const childrenFromApi = useChildrenStore((s) => s.children);
 
   const [formDraft, setFormDraft] = useState({
     label: '',
@@ -512,6 +515,7 @@ export default function BottomSheet({
           memo={formDraft.memo}
           timeDisplay={formDraft.time}
           selectedChildId={formDraft.childId}
+          childrenList={childrenFromApi}
           showChildSelect={isAddingForm || patchTargetRecordId != null}
           highlightHospitalLocation={highlightHospitalLocation}
           onTitleChange={(v) => setFormDraft((p) => ({ ...p, label: v }))}
@@ -625,7 +629,10 @@ export default function BottomSheet({
                           memo={event.memo}
                           childId={event.childId}
                           childLabelColor={hexFromTailwindCellColor(event.color)}
-                          childDisplayName={getRegisteredChildFullName(event.childId ?? '')}
+                          childDisplayName={childLegalNameFromList(
+                            childrenFromApi,
+                            event.childId ?? ''
+                          )}
                           fromRecording={Boolean(event.fromRecording)}
                           medicineText={event.medicineText ?? '항히스타민제 알비다정10mg'}
                           recordId={event.recordId}
