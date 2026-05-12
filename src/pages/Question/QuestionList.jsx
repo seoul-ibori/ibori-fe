@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, useOutletContext } from 'react-router';
 
+import { compressToEncodedURIComponent } from 'lz-string';
+
 import RobotIcon from '@/assets/icons/question/robot_icon.svg?react';
 import Bar from '@/components/Main/Bar';
 import QuestionBox from '@/components/Question/QuestionBox';
@@ -14,12 +16,7 @@ const SHARE_SEPARATOR = '';
 
 const buildSharedQuestionUrl = ({ childName, profileColor, questions }) => {
   const text = [childName, profileColor, ...questions].join(SHARE_SEPARATOR);
-  const bytes = new TextEncoder().encode(text);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  const encoded = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const encoded = compressToEncodedURIComponent(text);
   return `https://ibori.site/shared-question?d=${encoded}`;
 };
 
