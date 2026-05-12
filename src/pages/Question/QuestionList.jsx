@@ -10,15 +10,21 @@ import ChildrenImgBox from '@/components/common/ChildrenImgBox';
 import ChildrenNameBox from '@/components/common/ChildrenNameBox';
 import PageTitleBox from '@/components/common/PageTitleBox';
 
-const shareToKakao = () => {
-  const { Kakao } = window; // 전역 객체에서 Kakao를 가져옵니다.
+const shareToKakao = ({ childName, questions }) => {
+  const { Kakao } = window;
+
+  const title = childName ? `${childName} 진료 질문지` : '아이보리 진료 질문지';
+  const description =
+    questions.length > 0
+      ? questions.map((q, i) => `${i + 1}. ${q}`).join('\n')
+      : '맞벌이 가정을 위한 우리아이 종합 건강 관리!';
 
   Kakao.Share.sendDefault({
     objectType: 'feed',
     content: {
-      title: '아이보리',
-      description: '맞벌이 가정을 위한 우리아이 종합 건강 관리!',
-      imageUrl: 'https://ibori.site/thumbnail_img.png', // 아까 만든 절대 경로!
+      title,
+      description,
+      imageUrl: 'https://ibori.site/thumbnail.png',
       link: {
         mobileWebUrl: 'https://ibori.site',
         webUrl: 'https://ibori.site',
@@ -60,7 +66,8 @@ export default function QuestionList() {
 
   const handleShare = () => {
     try {
-      shareToKakao();
+      const checkedTexts = questions.filter((q) => q.checked).map((q) => q.text);
+      shareToKakao({ childName, questions: checkedTexts });
     } catch (error) {
       console.log('카카오 공유 실패', error);
       showToast();
