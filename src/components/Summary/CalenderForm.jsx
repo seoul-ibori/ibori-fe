@@ -57,6 +57,8 @@ export default function CalenderForm({
   time,
   location,
   memo,
+  childId,
+  childLabelColor = '#5AA7FF',
   childDisplayName = '',
   fromRecording = false,
   medicineText = '항노르디젠 화이트정10mg',
@@ -158,6 +160,8 @@ export default function CalenderForm({
           onClick={() =>
             onViewSummary({
               childName: detail?.childName ?? displayChild,
+              recordId: numericRecordId,
+              scheduleTitle: label,
             })
           }
           className="mt-6 rounded-[14px] text-[18px] font-semibold leading-none"
@@ -168,7 +172,14 @@ export default function CalenderForm({
         <Button
           bgColor="#FFC721"
           textColor="#FFFFFF"
-          onClick={onAddRecording}
+          onClick={() =>
+            onAddRecording({
+              recordId: numericRecordId,
+              childId: detail?.childId ?? childId ?? null,
+              childName: detail?.childName ?? displayChild ?? '',
+              childLabelColor,
+            })
+          }
           className="mt-10 rounded-[14px] text-[18px] font-semibold leading-none"
         >
           일정에 녹음 추가하기

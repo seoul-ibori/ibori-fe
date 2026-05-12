@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { TokenManager } from '@/api/api';
 import { getMedicalRecord } from '@/api/medicalRecord';
@@ -90,6 +90,21 @@ function mergeApiMedicalRecordsIntoCells(baseCells, records, year, month) {
   return copy;
 }
 
+function cellIndexForCompletedAt(cells, completedAt) {
+  if (!(completedAt instanceof Date) || Number.isNaN(completedAt.getTime())) return null;
+  if (
+    completedAt.getFullYear() !== CALENDAR_YEAR ||
+    completedAt.getMonth() + 1 !== CALENDAR_MONTH
+  ) {
+    const first = cells.findIndex(
+      (c) => !c.muted && typeof c.day === 'number' && c.day >= 1 && c.day <= 31
+    );
+    return first >= 0 ? first : 0;
+  }
+  const idx = findCellIndexForMonthDay(cells, completedAt.getDate());
+  return idx != null ? idx : 0;
+}
+
 export default function Calendar() {
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [cells, setCells] = useState(() => cloneCells(CELLS));
@@ -98,8 +113,11 @@ export default function Calendar() {
   const [isRecordOpen, setIsRecordOpen] = useState(false);
   const [selectedVoiceChild, setSelectedVoiceChild] = useState(null);
   const [recordingCellIndex, setRecordingCellIndex] = useState(null);
+  const [recordingRecordId, setRecordingRecordId] = useState(null);
+  const [recordingOpenedFromSchedule, setRecordingOpenedFromSchedule] = useState(false);
   const [scheduleAddPrefill, setScheduleAddPrefill] = useState(null);
   const [recordingSummaryView, setRecordingSummaryView] = useState(null);
+  const returnToDayIndexRef = useRef(null);
 
   const selectedCell = selectedIndex !== null ? cells[selectedIndex] : null;
 
@@ -243,7 +261,12 @@ export default function Calendar() {
       <button
         type="button"
         aria-label="음성 입력"
-        onClick={() => setIsVoiceModalOpen(true)}
+        onClick={() => {
+          returnToDayIndexRef.current = null;
+          setRecordingOpenedFromSchedule(false);
+          setRecordingRecordId(null);
+          setIsVoiceModalOpen(true);
+        }}
         className={`absolute bottom-[22px] right-6 z-30 flex size-[68px] items-center justify-center rounded-full text-[30px] text-white shadow-[0_4px_6px_rgba(18,18,23,0.2)] ${
           isVoiceModalOpen || isVoiceChildSelectOpen || isRecordOpen
             ? 'bg-[#E28906]'
@@ -284,14 +307,49 @@ export default function Calendar() {
         onScheduleAddPrefillConsumed={clearSchedulePrefill}
         summaryDateText={selectedCell ? `2026년 4월 ${selectedCell.day}일` : ''}
         onViewRecordingSummary={(payload) => {
+          const rawRid = payload?.recordId;
+          const recordIdNum =
+            rawRid != null &&
+            rawRid !== '' &&
+            Number.isFinite(Number(rawRid)) &&
+            Number(rawRid) >= 1
+              ? Number(rawRid)
+              : null;
           setRecordingSummaryView({
             childName: payload.childName || '우리집 아들',
             childLabelColor: payload.childLabelColor || '#5AA7FF',
             summaryDateText: payload.summaryDateText ?? '',
             eventIndex: typeof payload.eventIndex === 'number' ? payload.eventIndex : -1,
+            recordId: recordIdNum,
+            scheduleTitle: typeof payload.scheduleTitle === 'string' ? payload.scheduleTitle : '',
           });
         }}
-        onRequestRecording={() => {
+        onRequestRecording={(payload) => {
+          const returnIdx = selectedIndex;
+          const rid = payload?.recordId;
+          const hasRecord =
+            rid != null && rid !== '' && Number.isFinite(Number(rid)) && Number(rid) >= 1;
+          if (hasRecord) {
+            returnToDayIndexRef.current = returnIdx;
+            setRecordingOpenedFromSchedule(true);
+            setRecordingRecordId(Number(rid));
+            setSelectedVoiceChild({
+              id: payload.childId != null ? String(payload.childId) : '',
+              name: payload.childName ?? '',
+              labelColor: payload.childLabelColor ?? '#5AA7FF',
+            });
+            const cellIdx =
+              returnIdx != null && returnIdx >= 0 ? returnIdx : resolveRecordingCellIndex();
+            setRecordingCellIndex(cellIdx);
+            setSelectedIndex(null);
+            setIsVoiceModalOpen(false);
+            setIsVoiceChildSelectOpen(false);
+            setIsRecordOpen(true);
+            return;
+          }
+          returnToDayIndexRef.current = null;
+          setRecordingOpenedFromSchedule(false);
+          setRecordingRecordId(null);
           setSelectedIndex(null);
           setIsVoiceModalOpen(true);
         }}
@@ -302,14 +360,19 @@ export default function Calendar() {
           childName={recordingSummaryView.childName}
           childLabelColor={recordingSummaryView.childLabelColor}
           summaryDateText={recordingSummaryView.summaryDateText}
+          recordId={recordingSummaryView.recordId}
+          scheduleTitle={recordingSummaryView.scheduleTitle}
           hideScheduleCta
           allowSummaryDelete={
             typeof recordingSummaryView.eventIndex === 'number' &&
-            recordingSummaryView.eventIndex >= 0
+            recordingSummaryView.eventIndex >= 0 &&
+            recordingSummaryView.recordId != null &&
+            Number(recordingSummaryView.recordId) >= 1
           }
           onConfirmDeleteSummary={() => {
             const idx = recordingSummaryView?.eventIndex;
-            if (typeof idx !== 'number' || idx < 0 || selectedIndex === null) {
+            const rid = recordingSummaryView?.recordId;
+            if (typeof idx !== 'number' || idx < 0 || selectedIndex === null || rid == null) {
               setRecordingSummaryView(null);
               return;
             }
@@ -324,7 +387,6 @@ export default function Calendar() {
                       fromRecording: false,
                       recordingChildName: undefined,
                       recordingChildLabelColor: undefined,
-                      childId: undefined,
                     }
                   : e
               );
@@ -350,6 +412,8 @@ export default function Calendar() {
         onConfirm={(child) => {
           if (!child) return;
           setSelectedVoiceChild(child);
+          setRecordingRecordId(null);
+          setRecordingOpenedFromSchedule(false);
           setRecordingCellIndex(resolveRecordingCellIndex());
           setIsVoiceChildSelectOpen(false);
           setIsRecordOpen(true);
@@ -358,8 +422,11 @@ export default function Calendar() {
 
       <Record
         isOpen={isRecordOpen}
+        childId={selectedVoiceChild?.id ?? null}
+        recordId={recordingRecordId}
         childName={selectedVoiceChild?.name ?? ''}
         childLabelColor={selectedVoiceChild?.labelColor ?? '#5AA7FF'}
+        openedWithScheduleRecord={recordingOpenedFromSchedule}
         recordingCellIndex={recordingCellIndex}
         summaryDateText={
           recordingCellIndex != null && cells[recordingCellIndex]
@@ -368,10 +435,22 @@ export default function Calendar() {
         }
         onBack={() => {
           setIsRecordOpen(false);
+          setRecordingRecordId(null);
+          if (recordingOpenedFromSchedule) {
+            const back = returnToDayIndexRef.current;
+            returnToDayIndexRef.current = null;
+            setRecordingOpenedFromSchedule(false);
+            if (back != null) setSelectedIndex(back);
+            return;
+          }
           setIsVoiceChildSelectOpen(true);
         }}
-        onOpenScheduleFromSummary={({ completedAt, cellIndex }) => {
-          if (cellIndex == null || cellIndex < 0) return;
+        onOpenScheduleFromSummary={({ completedAt, cellIndex, recordId: aiRecordId }) => {
+          const resolvedIdx =
+            cellIndex != null && cellIndex >= 0
+              ? cellIndex
+              : cellIndexForCompletedAt(cells, completedAt);
+          if (resolvedIdx == null || resolvedIdx < 0) return;
           setScheduleAddPrefill({
             time: formatDateToKoreanMeridiem(completedAt),
             location: '',
@@ -379,8 +458,12 @@ export default function Calendar() {
             memo: '',
             childId: selectedVoiceChild?.id ?? '',
             highlightHospitalLocation: true,
-            saveButtonLabel: '녹음 저장하기',
-            primaryButtonBgColor: '#B9B2A6',
+            saveButtonLabel: '일정 저장하기',
+            primaryButtonBgColor: '#FFC721',
+            existingRecordId:
+              aiRecordId != null && Number.isFinite(Number(aiRecordId)) && Number(aiRecordId) >= 1
+                ? Number(aiRecordId)
+                : undefined,
             recordingMeta: {
               childName: selectedVoiceChild?.name ?? '',
               childLabelColor: selectedVoiceChild?.labelColor ?? '#5AA7FF',
@@ -390,7 +473,10 @@ export default function Calendar() {
           setIsRecordOpen(false);
           setIsVoiceChildSelectOpen(false);
           setIsVoiceModalOpen(false);
-          setSelectedIndex(cellIndex);
+          setRecordingRecordId(null);
+          setRecordingOpenedFromSchedule(false);
+          returnToDayIndexRef.current = null;
+          setSelectedIndex(resolvedIdx);
         }}
       />
     </section>
