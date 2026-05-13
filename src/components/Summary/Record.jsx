@@ -18,6 +18,13 @@ function formatElapsedTime(totalSeconds) {
   return `${hours}:${minutes}:${seconds}`;
 }
 
+function formatTreatDateYmd(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(
+    date.getDate()
+  ).padStart(2, '0')}`;
+}
+
 function recordIdFromAiSummaryResponse(data) {
   if (data == null || typeof data !== 'object') return null;
   const raw = data.recordId ?? data.id;
@@ -300,7 +307,9 @@ export default function Record({
       const pending = (async () => {
         try {
           const res = await postAiSummary({
-            ...(hasRecordId ? { recordId } : { childId }),
+            ...(hasRecordId
+              ? { recordId }
+              : { childId, treatDate: formatTreatDateYmd(new Date()) }),
             audioFile: blob,
             fileName: `recording-${Date.now()}.webm`,
           });

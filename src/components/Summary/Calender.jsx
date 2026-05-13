@@ -11,25 +11,57 @@ import SummaryRecord from '@/components/Summary/SummaryRecord';
 import VoiceChildSelectScreen from '@/components/Summary/VoiceChildSelectScreen';
 import CalendarPeriodHeader from '@/components/common/CalendarPeriodHeader';
 import Modal from '@/components/common/Modal';
-import { CELLS, WEEK_DAYS } from '@/constants/calenderDummyData';
+import { WEEK_DAYS } from '@/constants/calenderDummyData';
 import { useChildrenStore } from '@/store/childrenStore';
 import { calendarLabelBgClassFromChildren } from '@/utils/calendarChildColor';
 import { formatDateToKoreanMeridiem, hhmmToKoreanMeridiem } from '@/utils/koreanMeridiemTime';
 
-/** 더미 그리드가 맞는 기본 표시 월 (API·날짜 문자열과 동기) */
-const INITIAL_VIEW_YEAR = 2026;
-const INITIAL_VIEW_MONTH = 4;
+const TODAY = new Date();
+const INITIAL_VIEW_YEAR = TODAY.getFullYear();
+const INITIAL_VIEW_MONTH = TODAY.getMonth() + 1;
 
 function toTreatDateYmd(year, month, day) {
   if (typeof day !== 'number' || day < 1 || day > 31) return '';
   return `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`;
 }
 
-function cloneCells(source) {
-  return source.map((cell) => ({
-    ...cell,
-    events: cell.events?.map((e) => ({ ...e })),
-  }));
+function formatKoreanDateText(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+}
+
+function createMonthCells(year, month) {
+  const firstWeekDay = new Date(year, month - 1, 1).getDay();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const prevMonthDate = new Date(year, month - 1, 0);
+  const prevYear = prevMonthDate.getFullYear();
+  const prevMonth = prevMonthDate.getMonth() + 1;
+  const prevDaysInMonth = prevMonthDate.getDate();
+  const nextMonthDate = new Date(year, month, 1);
+  const nextYear = nextMonthDate.getFullYear();
+  const nextMonth = nextMonthDate.getMonth() + 1;
+  const totalCells = Math.max(35, Math.ceil((firstWeekDay + daysInMonth) / 7) * 7);
+
+  return Array.from({ length: totalCells }, (_, index) => {
+    const dayOffset = index - firstWeekDay + 1;
+    if (dayOffset < 1) {
+      return {
+        year: prevYear,
+        month: prevMonth,
+        day: prevDaysInMonth + dayOffset,
+        muted: true,
+      };
+    }
+    if (dayOffset > daysInMonth) {
+      return {
+        year: nextYear,
+        month: nextMonth,
+        day: dayOffset - daysInMonth,
+        muted: true,
+      };
+    }
+    return { year, month, day: dayOffset };
+  });
 }
 
 function normalizeMedicalRecordList(raw) {
@@ -96,18 +128,6 @@ function mergeApiMedicalRecordsIntoCells(
   return copy;
 }
 
-function cellIndexForCompletedAt(cells, completedAt, year, month) {
-  if (!(completedAt instanceof Date) || Number.isNaN(completedAt.getTime())) return null;
-  if (completedAt.getFullYear() !== year || completedAt.getMonth() + 1 !== month) {
-    const first = cells.findIndex(
-      (c) => !c.muted && typeof c.day === 'number' && c.day >= 1 && c.day <= 31
-    );
-    return first >= 0 ? first : 0;
-  }
-  const idx = findCellIndexForMonthDay(cells, completedAt.getDate());
-  return idx != null ? idx : 0;
-}
-
 export default function Calendar({ filterChildId = null }) {
   const navigate = useNavigate();
   const childrenRaw = useChildrenStore((s) => s.children);
@@ -115,7 +135,7 @@ export default function Calendar({ filterChildId = null }) {
   const [viewYear, setViewYear] = useState(INITIAL_VIEW_YEAR);
   const [viewMonth, setViewMonth] = useState(INITIAL_VIEW_MONTH);
   const [selectedIndex, setSelectedIndex] = useState(null);
-  const [cells, setCells] = useState(() => cloneCells(CELLS));
+  const [cells, setCells] = useState(() => createMonthCells(INITIAL_VIEW_YEAR, INITIAL_VIEW_MONTH));
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [isVoiceChildSelectOpen, setIsVoiceChildSelectOpen] = useState(false);
   const [isRecordOpen, setIsRecordOpen] = useState(false);
@@ -190,7 +210,7 @@ export default function Calendar({ filterChildId = null }) {
         const list = normalizeMedicalRecordList(raw);
         setCells(
           mergeApiMedicalRecordsIntoCells(
-            cloneCells(CELLS),
+            createMonthCells(viewYear, viewMonth),
             list,
             viewYear,
             viewMonth,
@@ -200,6 +220,9 @@ export default function Calendar({ filterChildId = null }) {
         );
       } catch (e) {
         console.error('캘린더 진료 기록 불러오기 실패', e);
+        if (!cancelled) {
+          setCells(createMonthCells(viewYear, viewMonth));
+        }
       }
     })();
     return () => {
@@ -217,6 +240,8 @@ export default function Calendar({ filterChildId = null }) {
           onChange={(y, m) => {
             setViewYear(y);
             setViewMonth(m);
+            setSelectedIndex(null);
+            setCells(createMonthCells(y, m));
           }}
           className=""
         />
@@ -325,15 +350,22 @@ export default function Calendar({ filterChildId = null }) {
         }
         isOpen={selectedIndex !== null}
         selectedLabel={
-          selectedCell ? `${viewMonth}월 ${selectedCell.day}일 ${selectedWeekDay}요일` : ''
+          selectedCell ? `${selectedCell.month}월 ${selectedCell.day}일 ${selectedWeekDay}요일` : ''
         }
         events={selectedCell?.events ?? []}
         onClose={() => setSelectedIndex(null)}
         onSaveEvents={handleSaveDayEvents}
-        treatDate={selectedCell ? toTreatDateYmd(viewYear, viewMonth, selectedCell.day) : ''}
+        treatDate={
+          selectedCell
+            ? toTreatDateYmd(selectedCell.year, selectedCell.month, selectedCell.day)
+            : ''
+        }
+        selectedYear={selectedCell?.year ?? viewYear}
         scheduleAddPrefill={scheduleAddPrefill}
         onScheduleAddPrefillConsumed={clearSchedulePrefill}
-        summaryDateText={selectedCell ? `${viewYear}년 ${viewMonth}월 ${selectedCell.day}일` : ''}
+        summaryDateText={
+          selectedCell ? `${selectedCell.year}년 ${selectedCell.month}월 ${selectedCell.day}일` : ''
+        }
         onViewRecordingSummary={(payload) => {
           const rawRid = payload?.recordId;
           const recordIdNum =
@@ -444,7 +476,7 @@ export default function Calendar({ filterChildId = null }) {
           setSelectedVoiceChild(child);
           setRecordingRecordId(null);
           setRecordingOpenedFromSchedule(false);
-          setRecordingCellIndex(resolveRecordingCellIndex());
+          setRecordingCellIndex(null);
           setIsVoiceChildSelectOpen(false);
           setIsRecordOpen(true);
         }}
@@ -459,9 +491,9 @@ export default function Calendar({ filterChildId = null }) {
         openedWithScheduleRecord={recordingOpenedFromSchedule}
         recordingCellIndex={recordingCellIndex}
         summaryDateText={
-          recordingCellIndex != null && cells[recordingCellIndex]
-            ? `${viewYear}년 ${viewMonth}월 ${cells[recordingCellIndex].day}일`
-            : ''
+          recordingOpenedFromSchedule && recordingCellIndex != null && cells[recordingCellIndex]
+            ? `${cells[recordingCellIndex].year}년 ${cells[recordingCellIndex].month}월 ${cells[recordingCellIndex].day}일`
+            : formatKoreanDateText(new Date())
         }
         onBack={() => {
           setIsRecordOpen(false);
@@ -477,13 +509,26 @@ export default function Calendar({ filterChildId = null }) {
           navigate('/summary', { replace: true });
         }}
         onOpenScheduleFromSummary={({ completedAt, cellIndex, recordId: aiRecordId }) => {
+          const completedDate =
+            completedAt instanceof Date && !Number.isNaN(completedAt.getTime())
+              ? completedAt
+              : new Date();
+          const targetCells =
+            cellIndex == null
+              ? createMonthCells(completedDate.getFullYear(), completedDate.getMonth() + 1)
+              : cells;
           const resolvedIdx =
             cellIndex != null && cellIndex >= 0
               ? cellIndex
-              : cellIndexForCompletedAt(cells, completedAt, viewYear, viewMonth);
+              : findCellIndexForMonthDay(targetCells, completedDate.getDate());
           if (resolvedIdx == null || resolvedIdx < 0) return;
+          if (cellIndex == null) {
+            setViewYear(completedDate.getFullYear());
+            setViewMonth(completedDate.getMonth() + 1);
+            setCells(targetCells);
+          }
           setScheduleAddPrefill({
-            time: formatDateToKoreanMeridiem(completedAt),
+            time: formatDateToKoreanMeridiem(completedDate),
             location: '',
             label: '',
             memo: '',
