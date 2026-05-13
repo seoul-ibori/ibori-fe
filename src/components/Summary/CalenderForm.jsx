@@ -174,7 +174,7 @@ export default function CalenderForm({
         </p>
       ) : null}
 
-      <div className="-mt-4 space-y-3">
+      <div className="mt-4 space-y-3">
         {displayLocation ? (
           <InfoItem
             icon={<PlaceIcon className="size-3 [&_path]:fill-[#AB4C0A]" />}
@@ -224,7 +224,7 @@ export default function CalenderForm({
               scheduleTitle: label,
             })
           }
-          className="mt-2 rounded-[14px] text-[18px] font-semibold leading-none"
+          className="mt-1 rounded-[14px] text-[18px] font-semibold leading-none"
         >
           진료 요약 보기
         </Button>
@@ -240,7 +240,7 @@ export default function CalenderForm({
               childLabelColor,
             })
           }
-          className="mt-8 rounded-[14px] text-[18px] font-semibold leading-none"
+          className="mt-4 rounded-[14px] text-[18px] font-semibold leading-none"
         >
           일정에 녹음 추가하기
         </Button>
