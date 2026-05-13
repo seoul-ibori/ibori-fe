@@ -72,6 +72,7 @@ function formatKoreanMeridiemTime(value) {
 export default function BottomSheet({
   isOpen,
   selectedLabel,
+  selectedYear = '',
   events = [],
   onClose,
   onAddSchedule = () => {},
@@ -269,6 +270,7 @@ export default function BottomSheet({
             childId: childIdNum,
             title: formDraft.label.trim(),
             hospitalName: (formDraft.location ?? '').trim(),
+            treatDate,
             treatTime: koreanMeridiemToHHmm(formattedTime),
             memo: (formDraft.memo ?? '').trim(),
           });
@@ -399,7 +401,7 @@ export default function BottomSheet({
         <CalendarIcon className="size-12" />
       </div>
       <div>
-        <p className="text-[15px] font-bold leading-none text-[#777]">2026년</p>
+        <p className="text-[15px] font-bold leading-none text-[#777]">{selectedYear}년</p>
         <p className="mt-2 text-[18px] font-bold leading-none text-black">{selectedLabel}</p>
       </div>
     </div>
@@ -411,7 +413,9 @@ export default function BottomSheet({
         <CalendarIcon className="size-10" />
       </div>
       <div>
-        <p className="mt-[4px] text-[16px] font-medium leading-none text-[#706963]">2026년</p>
+        <p className="mt-[4px] text-[16px] font-medium leading-none text-[#706963]">
+          {selectedYear}년
+        </p>
         <p className="mt-1 text-[18px] font-bold leading-none text-black">{selectedLabel}</p>
       </div>
     </div>
