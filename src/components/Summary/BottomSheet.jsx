@@ -9,11 +9,9 @@ import { SwipeableEventRow } from '@/components/Summary/CalendarDelete';
 import CalenderEdit from '@/components/Summary/CalenderEdit';
 import CalenderForm from '@/components/Summary/CalenderForm';
 import Button from '@/components/common/Button';
+import { getRegisteredChildFullName } from '@/constants/voiceChildren';
 import { useCalendarDelete } from '@/hooks/useCalendarDelete';
 import { normalizeEventForEdit, useCalendarEdit } from '@/hooks/useCalendarEdit';
-import { useChildrenStore } from '@/store/childrenStore';
-import { calendarLabelBgClassFromChildren } from '@/utils/calendarChildColor';
-import { childLegalNameFromList } from '@/utils/childDisplayName';
 import { koreanMeridiemToHHmm } from '@/utils/koreanMeridiemTime';
 
 function EventRow({ title, time, trailing, fromRecording = false }) {
@@ -111,8 +109,6 @@ export default function BottomSheet({
   const { editPhase, editingIndex, exitEditModes, enterEditList, openEditForm, backToEditList } =
     useCalendarEdit();
 
-  const childrenFromApi = useChildrenStore((s) => s.children);
-
   const [formDraft, setFormDraft] = useState({
     label: '',
     location: '',
@@ -200,16 +196,12 @@ export default function BottomSheet({
     setExpandedRowKey(null);
     setIsAddingForm(true);
     const childId = scheduleAddPrefill.childId ?? '';
-    const childIdStr = String(childId).trim();
-    const childrenForColor = useChildrenStore.getState().children;
     setFormDraft({
       label: scheduleAddPrefill.label ?? '',
       location: scheduleAddPrefill.location ?? '',
       memo: scheduleAddPrefill.memo ?? '',
       time: scheduleAddPrefill.time ?? '오전 10:30',
-      color:
-        scheduleAddPrefill.color ??
-        (childIdStr ? calendarLabelBgClassFromChildren(childrenForColor, childId) : 'bg-[#FFC721]'),
+      color: scheduleAddPrefill.color ?? 'bg-[#FFC721]',
       childId,
     });
     setHighlightHospitalLocation(Boolean(scheduleAddPrefill.highlightHospitalLocation));
@@ -240,7 +232,7 @@ export default function BottomSheet({
             fromRecording: true,
             recordingChildName: addFormRecordingMeta.childName ?? '',
             recordingChildLabelColor: addFormRecordingMeta.childLabelColor ?? '#5AA7FF',
-            medicineText: addFormRecordingMeta.medicineText ?? '',
+            medicineText: addFormRecordingMeta.medicineText ?? '항히스타민제 알비다정10mg',
           }
         : {};
 
@@ -520,7 +512,6 @@ export default function BottomSheet({
           memo={formDraft.memo}
           timeDisplay={formDraft.time}
           selectedChildId={formDraft.childId}
-          childrenList={childrenFromApi}
           showChildSelect={isAddingForm || patchTargetRecordId != null}
           highlightHospitalLocation={highlightHospitalLocation}
           onTitleChange={(v) => setFormDraft((p) => ({ ...p, label: v }))}
@@ -530,16 +521,7 @@ export default function BottomSheet({
           }}
           onMemoChange={(v) => setFormDraft((p) => ({ ...p, memo: v }))}
           onTimeChange={(v) => setFormDraft((p) => ({ ...p, time: v }))}
-          onChildIdChange={(id) =>
-            setFormDraft((p) => ({
-              ...p,
-              childId: id,
-              color:
-                id != null && String(id).trim() !== ''
-                  ? calendarLabelBgClassFromChildren(childrenFromApi, id)
-                  : 'bg-[#FFC721]',
-            }))
-          }
+          onChildIdChange={(id) => setFormDraft((p) => ({ ...p, childId: id }))}
         />
       ) : (
         <div>
@@ -643,12 +625,9 @@ export default function BottomSheet({
                           memo={event.memo}
                           childId={event.childId}
                           childLabelColor={hexFromTailwindCellColor(event.color)}
-                          childDisplayName={childLegalNameFromList(
-                            childrenFromApi,
-                            event.childId ?? ''
-                          )}
+                          childDisplayName={getRegisteredChildFullName(event.childId ?? '')}
                           fromRecording={Boolean(event.fromRecording)}
-                          medicineText={event.medicineText ?? ''}
+                          medicineText={event.medicineText ?? '항히스타민제 알비다정10mg'}
                           recordId={event.recordId}
                           onViewSummary={(meta) =>
                             onViewRecordingSummary({
