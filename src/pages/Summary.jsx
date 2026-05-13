@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import ChildrenBox from '@/components/Main/ChildrenBox';
 import Calendar from '@/components/Summary/Calender';
@@ -7,6 +7,14 @@ import { useChildrenStore } from '@/store/childrenStore';
 export default function Summary() {
   const children = useChildrenStore((s) => s.children);
   const [filterChildId, setFilterChildId] = useState(null);
+  const filterChildName = useMemo(() => {
+    if (filterChildId == null) return '';
+    const selectedChild = children.find(
+      (child) => String(child?.childId ?? '').trim() === String(filterChildId).trim()
+    );
+    const rawName = selectedChild?.childName ?? selectedChild?.name;
+    return rawName != null ? String(rawName).trim() : '';
+  }, [children, filterChildId]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
@@ -20,12 +28,15 @@ export default function Summary() {
                 .map((child) => {
                   const cid = Number(child.childId);
                   const selected = filterChildId != null && filterChildId === cid;
+                  const isFaded = filterChildId != null && !selected;
                   return (
                     <button
                       key={cid}
                       type="button"
                       onClick={() => setFilterChildId(selected ? null : cid)}
-                      className="shrink-0 border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-[#FFC721]/50 focus-visible:ring-offset-2"
+                      className={`shrink-0 border-0 bg-transparent p-0 outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-[#FFC721]/50 focus-visible:ring-offset-2 ${
+                        isFaded ? 'opacity-35' : 'opacity-100'
+                      }`}
                     >
                       <ChildrenBox
                         name={child.nickname || child.childName}
@@ -41,7 +52,7 @@ export default function Summary() {
         </>
       ) : null}
       <div className="flex min-h-0 flex-1 flex-col">
-        <Calendar filterChildId={filterChildId} />
+        <Calendar filterChildId={filterChildId} filterChildName={filterChildName} />
       </div>
     </div>
   );

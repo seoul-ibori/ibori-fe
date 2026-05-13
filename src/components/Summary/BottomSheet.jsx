@@ -342,6 +342,8 @@ export default function BottomSheet({
             time: formattedTime,
             color: formDraft.color ?? 'bg-[#FFC721]',
             childId: formDraft.childId || undefined,
+            childName:
+              childLegalNameFromList(childrenFromApi, formDraft.childId || '') || undefined,
             ...(createdRecordId != null ? { recordId: createdRecordId } : {}),
             ...recordingExtras,
           },
@@ -356,6 +358,8 @@ export default function BottomSheet({
             time: formattedTime,
             color: formDraft.color ?? e.color,
             childId: formDraft.childId || undefined,
+            childName:
+              childLegalNameFromList(childrenFromApi, formDraft.childId || '') || undefined,
           };
         });
 
@@ -363,6 +367,7 @@ export default function BottomSheet({
     exitEditModesFully();
   }, [
     addFormRecordingMeta,
+    childrenFromApi,
     editingIndex,
     events,
     formDraft,
@@ -656,8 +661,15 @@ export default function BottomSheet({
                           recordId={event.recordId}
                           onViewSummary={(meta) =>
                             onViewRecordingSummary({
-                              childName: meta?.childName ?? event.recordingChildName ?? '',
-                              childLabelColor: event.recordingChildLabelColor ?? '#5AA7FF',
+                              childName:
+                                meta?.childName ??
+                                event.recordingChildName ??
+                                childLegalNameFromList(childrenFromApi, event.childId ?? '') ??
+                                '',
+                              childLabelColor:
+                                meta?.childLabelColor ??
+                                event.recordingChildLabelColor ??
+                                hexFromTailwindCellColor(event.color),
                               summaryDateText,
                               eventIndex: index,
                               recordId: meta?.recordId ?? event.recordId ?? null,
