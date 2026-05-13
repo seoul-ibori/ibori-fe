@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { TokenManager } from '@/api/api';
 import { getChildren } from '@/api/child';
@@ -9,20 +8,18 @@ import BottomSheet from '@/components/Summary/BottomSheet';
 import Record from '@/components/Summary/Record';
 import SummaryRecord from '@/components/Summary/SummaryRecord';
 import VoiceChildSelectScreen from '@/components/Summary/VoiceChildSelectScreen';
-import CalendarPeriodHeader from '@/components/common/CalendarPeriodHeader';
 import Modal from '@/components/common/Modal';
 import { CELLS, WEEK_DAYS } from '@/constants/calenderDummyData';
 import { useChildrenStore } from '@/store/childrenStore';
-import { calendarLabelBgClassFromChildren } from '@/utils/calendarChildColor';
 import { formatDateToKoreanMeridiem, hhmmToKoreanMeridiem } from '@/utils/koreanMeridiemTime';
 
-/** 더미 그리드가 맞는 기본 표시 월 (API·날짜 문자열과 동기) */
-const INITIAL_VIEW_YEAR = 2026;
-const INITIAL_VIEW_MONTH = 4;
+/** UI 헤더와 동일 (월 이동 연동 전까지 고정) */
+const CALENDAR_YEAR = 2026;
+const CALENDAR_MONTH = 4;
 
-function toTreatDateYmd(year, month, day) {
+function toTreatDateYmd(day) {
   if (typeof day !== 'number' || day < 1 || day > 31) return '';
-  return `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`;
+  return `${CALENDAR_YEAR}${String(CALENDAR_MONTH).padStart(2, '0')}${String(day).padStart(2, '0')}`;
 }
 
 function cloneCells(source) {
@@ -30,6 +27,17 @@ function cloneCells(source) {
     ...cell,
     events: cell.events?.map((e) => ({ ...e })),
   }));
+}
+
+const CHILD_EVENT_COLORS = {
+  1: 'bg-[#5AA7FF]',
+  2: 'bg-[#FFC721]',
+  3: 'bg-[#FF8763]',
+};
+
+function eventColorForChildId(childId) {
+  const n = Number(childId);
+  return CHILD_EVENT_COLORS[n] ?? 'bg-[#FFC721]';
 }
 
 function normalizeMedicalRecordList(raw) {
@@ -58,24 +66,12 @@ function findCellIndexForMonthDay(cells, day) {
   return (nonMuted ?? matches[0]).i;
 }
 
-function mergeApiMedicalRecordsIntoCells(
-  baseCells,
-  records,
-  year,
-  month,
-  childrenRaw,
-  filterChildId
-) {
-  const fid = filterChildId != null && filterChildId !== '' ? String(filterChildId) : null;
+function mergeApiMedicalRecordsIntoCells(baseCells, records, year, month) {
   const copy = baseCells.map((cell) => ({
     ...cell,
-    events: cell.events
-      ?.filter((e) => e.recordId == null)
-      .filter((e) => fid == null || String(e.childId ?? '').trim() === fid)
-      .map((e) => ({ ...e })),
+    events: cell.events?.filter((e) => e.recordId == null).map((e) => ({ ...e })),
   }));
   for (const r of records) {
-    if (fid != null && String(r.childId ?? '').trim() !== fid) continue;
     const t = parseTreatDateParts(r.treatDate);
     if (!t || t.y !== year || t.m !== month || !Number.isFinite(t.d)) continue;
     const idx = findCellIndexForMonthDay(copy, t.d);
@@ -85,7 +81,7 @@ function mergeApiMedicalRecordsIntoCells(
       location: r.hospitalName ?? '',
       memo: r.memo ?? '',
       time: hhmmToKoreanMeridiem(r.treatTime),
-      color: calendarLabelBgClassFromChildren(childrenRaw, r.childId),
+      color: eventColorForChildId(r.childId),
       childId: r.childId != null ? String(r.childId) : undefined,
       recordId: r.recordId,
     };
@@ -96,9 +92,12 @@ function mergeApiMedicalRecordsIntoCells(
   return copy;
 }
 
-function cellIndexForCompletedAt(cells, completedAt, year, month) {
+function cellIndexForCompletedAt(cells, completedAt) {
   if (!(completedAt instanceof Date) || Number.isNaN(completedAt.getTime())) return null;
-  if (completedAt.getFullYear() !== year || completedAt.getMonth() + 1 !== month) {
+  if (
+    completedAt.getFullYear() !== CALENDAR_YEAR ||
+    completedAt.getMonth() + 1 !== CALENDAR_MONTH
+  ) {
     const first = cells.findIndex(
       (c) => !c.muted && typeof c.day === 'number' && c.day >= 1 && c.day <= 31
     );
@@ -108,12 +107,9 @@ function cellIndexForCompletedAt(cells, completedAt, year, month) {
   return idx != null ? idx : 0;
 }
 
-export default function Calendar({ filterChildId = null }) {
-  const navigate = useNavigate();
+export default function Calendar() {
   const childrenRaw = useChildrenStore((s) => s.children);
   const setChildren = useChildrenStore((s) => s.setChildren);
-  const [viewYear, setViewYear] = useState(INITIAL_VIEW_YEAR);
-  const [viewMonth, setViewMonth] = useState(INITIAL_VIEW_MONTH);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [cells, setCells] = useState(() => cloneCells(CELLS));
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
@@ -182,21 +178,13 @@ export default function Calendar({ filterChildId = null }) {
     (async () => {
       try {
         const raw = await getMedicalRecord({
-          year: viewYear,
-          month: viewMonth,
-          childId: filterChildId != null ? filterChildId : undefined,
+          year: CALENDAR_YEAR,
+          month: CALENDAR_MONTH,
         });
         if (cancelled) return;
         const list = normalizeMedicalRecordList(raw);
-        setCells(
-          mergeApiMedicalRecordsIntoCells(
-            cloneCells(CELLS),
-            list,
-            viewYear,
-            viewMonth,
-            childrenRaw,
-            filterChildId
-          )
+        setCells((prev) =>
+          mergeApiMedicalRecordsIntoCells(cloneCells(prev), list, CALENDAR_YEAR, CALENDAR_MONTH)
         );
       } catch (e) {
         console.error('캘린더 진료 기록 불러오기 실패', e);
@@ -205,108 +193,117 @@ export default function Calendar({ filterChildId = null }) {
     return () => {
       cancelled = true;
     };
-  }, [viewYear, viewMonth, filterChildId, childrenRaw]);
+  }, []);
 
   return (
-    <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white px-6 pb-6 pt-5">
-      <div className="mb-5 shrink-0">
-        <CalendarPeriodHeader
-          textColor="text-[#AB4C0A]"
-          year={viewYear}
-          month={viewMonth}
-          onChange={(y, m) => {
-            setViewYear(y);
-            setViewMonth(m);
-          }}
-          className=""
-        />
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-hidden pb-6">
-        <div className="grid grid-cols-7">
-          {WEEK_DAYS.map((day) => (
-            <div key={day.label} className={`pb-2 text-center text-sm font-bold ${day.color}`}>
-              {day.label}
-            </div>
-          ))}
-
-          {cells.map((cell, index) => (
-            <button
-              type="button"
-              key={`${cell.day}-${index}`}
-              onClick={() => setSelectedIndex(index)}
-              className={`box-border flex h-[81px] flex-col overflow-hidden px-[2px] py-[2px] ${
-                selectedIndex === index ? 'rounded border border-[#FFC721]' : ''
-              }`}
-            >
-              <div
-                className={`flex h-6 shrink-0 items-center justify-center text-[10px] font-bold leading-none ${
-                  cell.muted ? 'text-[#252525]/50' : 'text-[#252525]'
-                }`}
-              >
-                {selectedIndex === index ? (
-                  <span className="flex size-[18px] items-center justify-center rounded-full bg-[#FFC721] text-[10px] text-white">
-                    {cell.day}
-                  </span>
-                ) : (
-                  cell.day
-                )}
-              </div>
-              <div className="min-h-0 flex-1 space-y-0.5 overflow-hidden">
-                {cell.events?.map((event, ei) => (
-                  <div
-                    key={
-                      event.recordId != null
-                        ? `r-${event.recordId}`
-                        : `e-${cell.day}-${ei}-${event.label}`
-                    }
-                    className={`truncate rounded-[2px] px-1 py-0.5 text-[8px] font-medium ${
-                      event.fromRecording
-                        ? 'border border-[#FF3D00] bg-[#FFFCF9] text-[#FF3D00]'
-                        : `text-[#FFFCF9] ${event.color}`
-                    }`}
-                  >
-                    {event.label}
-                  </div>
-                ))}
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div
-        className="pointer-events-none fixed inset-x-0 z-[25] flex justify-center"
-        style={{
-          bottom: 'calc(5.75rem + env(safe-area-inset-bottom, 0px))',
-        }}
-      >
-        <div className="pointer-events-auto flex w-full max-w-112.5 justify-end pr-6">
+    <section className="relative h-[530px] w-full overflow-hidden bg-white px-6 pb-6 pt-[25px]">
+      <div className="mb-5 flex h-[39px] items-center justify-between">
+        <button
+          type="button"
+          aria-label="이전 달"
+          className="flex size-[39px] items-center justify-center rounded-full bg-white text-[39px] leading-none text-[#0B1324] shadow-[0_0.9px_0.45px_rgba(0,14,51,0.05)]"
+        >
+          ‹
+        </button>
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
-            aria-label="음성 입력"
-            onClick={() => {
-              returnToDayIndexRef.current = null;
-              setRecordingOpenedFromSchedule(false);
-              setRecordingRecordId(null);
-              setIsVoiceModalOpen(true);
-            }}
-            className={`flex size-[68px] items-center justify-center rounded-full text-[30px] text-white shadow-[0_4px_6px_rgba(18,18,23,0.2)] ${
-              isVoiceModalOpen || isVoiceChildSelectOpen || isRecordOpen
-                ? 'bg-[#E28906]'
-                : 'bg-[#FFC721]'
-            }`}
+            className="flex items-center gap-0.5 rounded-md bg-white px-[10px] py-[9px] text-[21px] font-bold leading-none text-[#5F3010] tracking-[-0.21px] shadow-[0_0.8px_0.4px_rgba(0,14,51,0.05)]"
+            style={{ fontFamily: 'Lexend, sans-serif' }}
           >
-            <MicrophoneIcon
-              className={`size-10 ${
-                isVoiceModalOpen || isVoiceChildSelectOpen || isRecordOpen
-                  ? '[&_rect]:fill-[#E28906]'
-                  : '[&_rect]:fill-[#FFC721]'
-              }`}
-            />
+            2026년 <span className="text-[11px] text-[#FFC721]">▼</span>
+          </button>
+          <button
+            type="button"
+            className="flex items-center gap-0.5 rounded-md bg-white px-[10px] py-[9px] text-[21px] font-bold leading-none text-[#5F3010] tracking-[-0.21px] shadow-[0_0.8px_0.4px_rgba(0,14,51,0.05)]"
+            style={{ fontFamily: 'Lexend, sans-serif' }}
+          >
+            4월 <span className="text-[11px] text-[#FFC721]">▼</span>
           </button>
         </div>
+        <button
+          type="button"
+          aria-label="다음 달"
+          className="flex size-[39px] items-center justify-center rounded-full bg-white text-[39px] leading-none text-[#0B1324] shadow-[0_0.9px_0.45px_rgba(0,14,51,0.05)]"
+        >
+          ›
+        </button>
       </div>
+
+      <div className="grid grid-cols-7">
+        {WEEK_DAYS.map((day) => (
+          <div key={day.label} className={`pb-2 text-center text-sm font-bold ${day.color}`}>
+            {day.label}
+          </div>
+        ))}
+
+        {cells.map((cell, index) => (
+          <button
+            type="button"
+            key={`${cell.day}-${index}`}
+            onClick={() => setSelectedIndex(index)}
+            className={`box-border flex h-[81px] flex-col overflow-hidden px-[2px] py-[2px] ${
+              selectedIndex === index ? 'rounded border border-[#FFC721]' : ''
+            }`}
+          >
+            <div
+              className={`flex h-6 shrink-0 items-center justify-center text-[10px] font-bold leading-none ${
+                cell.muted ? 'text-[#252525]/50' : 'text-[#252525]'
+              }`}
+            >
+              {selectedIndex === index ? (
+                <span className="flex size-[18px] items-center justify-center rounded-full bg-[#FFC721] text-[10px] text-white">
+                  {cell.day}
+                </span>
+              ) : (
+                cell.day
+              )}
+            </div>
+            <div className="min-h-0 flex-1 space-y-0.5 overflow-hidden">
+              {cell.events?.map((event, ei) => (
+                <div
+                  key={
+                    event.recordId != null
+                      ? `r-${event.recordId}`
+                      : `e-${cell.day}-${ei}-${event.label}`
+                  }
+                  className={`truncate rounded-[2px] px-1 py-0.5 text-[8px] font-medium ${
+                    event.fromRecording
+                      ? 'border border-[#FF3D00] bg-[#FFFCF9] text-[#FF3D00]'
+                      : `text-[#FFFCF9] ${event.color}`
+                  }`}
+                >
+                  {event.label}
+                </div>
+              ))}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        aria-label="음성 입력"
+        onClick={() => {
+          returnToDayIndexRef.current = null;
+          setRecordingOpenedFromSchedule(false);
+          setRecordingRecordId(null);
+          setIsVoiceModalOpen(true);
+        }}
+        className={`absolute bottom-[22px] right-6 z-30 flex size-[68px] items-center justify-center rounded-full text-[30px] text-white shadow-[0_4px_6px_rgba(18,18,23,0.2)] ${
+          isVoiceModalOpen || isVoiceChildSelectOpen || isRecordOpen
+            ? 'bg-[#E28906]'
+            : 'bg-[#FFC722]'
+        }`}
+      >
+        <MicrophoneIcon
+          className={`size-10 ${
+            isVoiceModalOpen || isVoiceChildSelectOpen || isRecordOpen
+              ? '[&_rect]:fill-[#E28906]'
+              : '[&_rect]:fill-[#FFC722]'
+          }`}
+        />
+      </button>
 
       {selectedIndex !== null && (
         <button
@@ -324,16 +321,14 @@ export default function Calendar({ filterChildId = null }) {
             : 'sheet-closed'
         }
         isOpen={selectedIndex !== null}
-        selectedLabel={
-          selectedCell ? `${viewMonth}월 ${selectedCell.day}일 ${selectedWeekDay}요일` : ''
-        }
+        selectedLabel={selectedCell ? `4월 ${selectedCell.day}일 ${selectedWeekDay}요일` : ''}
         events={selectedCell?.events ?? []}
         onClose={() => setSelectedIndex(null)}
         onSaveEvents={handleSaveDayEvents}
-        treatDate={selectedCell ? toTreatDateYmd(viewYear, viewMonth, selectedCell.day) : ''}
+        treatDate={selectedCell ? toTreatDateYmd(selectedCell.day) : ''}
         scheduleAddPrefill={scheduleAddPrefill}
         onScheduleAddPrefillConsumed={clearSchedulePrefill}
-        summaryDateText={selectedCell ? `${viewYear}년 ${viewMonth}월 ${selectedCell.day}일` : ''}
+        summaryDateText={selectedCell ? `2026년 4월 ${selectedCell.day}일` : ''}
         onViewRecordingSummary={(payload) => {
           const rawRid = payload?.recordId;
           const recordIdNum =
@@ -460,27 +455,26 @@ export default function Calendar({ filterChildId = null }) {
         recordingCellIndex={recordingCellIndex}
         summaryDateText={
           recordingCellIndex != null && cells[recordingCellIndex]
-            ? `${viewYear}년 ${viewMonth}월 ${cells[recordingCellIndex].day}일`
+            ? `2026년 4월 ${cells[recordingCellIndex].day}일`
             : ''
         }
         onBack={() => {
           setIsRecordOpen(false);
           setRecordingRecordId(null);
-          setIsVoiceModalOpen(false);
-          setIsVoiceChildSelectOpen(false);
           if (recordingOpenedFromSchedule) {
             const back = returnToDayIndexRef.current;
             returnToDayIndexRef.current = null;
             setRecordingOpenedFromSchedule(false);
             if (back != null) setSelectedIndex(back);
+            return;
           }
-          navigate('/summary', { replace: true });
+          setIsVoiceChildSelectOpen(true);
         }}
         onOpenScheduleFromSummary={({ completedAt, cellIndex, recordId: aiRecordId }) => {
           const resolvedIdx =
             cellIndex != null && cellIndex >= 0
               ? cellIndex
-              : cellIndexForCompletedAt(cells, completedAt, viewYear, viewMonth);
+              : cellIndexForCompletedAt(cells, completedAt);
           if (resolvedIdx == null || resolvedIdx < 0) return;
           setScheduleAddPrefill({
             time: formatDateToKoreanMeridiem(completedAt),
@@ -498,7 +492,7 @@ export default function Calendar({ filterChildId = null }) {
             recordingMeta: {
               childName: selectedVoiceChild?.name ?? '',
               childLabelColor: selectedVoiceChild?.labelColor ?? '#5AA7FF',
-              medicineText: '',
+              medicineText: '항히스타민제 알비다정10mg',
             },
           });
           setIsRecordOpen(false);

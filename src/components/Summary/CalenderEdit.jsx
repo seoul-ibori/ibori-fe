@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import DownArrowIcon from '@/assets/icons/down-arrow.svg?react';
 import CalenderDateEdit from '@/components/Summary/CalenderDateEdit';
-import { childLegalNameFromList } from '@/utils/childDisplayName';
+import { REGISTERED_CHILDREN_DUMMY, getRegisteredChildFullName } from '@/constants/voiceChildren';
 
 export default function CalenderEdit({
   title,
@@ -10,7 +10,6 @@ export default function CalenderEdit({
   memo,
   timeDisplay,
   selectedChildId = '',
-  childrenList = [],
   onTitleChange,
   onLocationChange,
   onMemoChange,
@@ -21,24 +20,7 @@ export default function CalenderEdit({
 }) {
   const [childPickerOpen, setChildPickerOpen] = useState(false);
 
-  const selectedChildName = useMemo(
-    () => childLegalNameFromList(childrenList, selectedChildId),
-    [childrenList, selectedChildId]
-  );
-
-  const pickerRows = useMemo(() => {
-    const list = Array.isArray(childrenList) ? childrenList : [];
-    return list
-      .map((c) => {
-        const id = c?.childId ?? c?.id;
-        if (id == null || id === '') return null;
-        const idStr = String(id).trim();
-        const nameRaw = c?.childName ?? c?.name;
-        const label = nameRaw != null ? String(nameRaw).trim() : '';
-        return { id: idStr, label: label || idStr };
-      })
-      .filter(Boolean);
-  }, [childrenList]);
+  const selectedChildName = getRegisteredChildFullName(selectedChildId);
 
   const fieldClass =
     'w-full bg-transparent py-2 text-[18px] leading-[28px] outline-none ring-0 border-0 rounded-none';
@@ -90,9 +72,7 @@ export default function CalenderEdit({
                 onClick={() => setChildPickerOpen((o) => !o)}
                 className="flex w-full items-center justify-between gap-3 py-2 text-left"
               >
-                {childPickerOpen ? (
-                  <span className="min-w-0 flex-1" aria-hidden />
-                ) : selectedChildName ? (
+                {selectedChildName ? (
                   <span className="min-w-0 flex-1 truncate text-[18px] font-medium leading-[28px] text-[#706963]">
                     {selectedChildName}
                   </span>
@@ -109,32 +89,26 @@ export default function CalenderEdit({
               </button>
               {childPickerOpen ? (
                 <div className="mb-2 rounded-[10px] bg-[#FAF7F2] px-1 py-1">
-                  {pickerRows.length === 0 ? (
-                    <p className="px-2 py-2.5 text-right text-[15px] font-medium leading-snug text-[#A8A19A]">
-                      등록된 아이가 없거나 목록을 불러오는 중이에요.
-                    </p>
-                  ) : (
-                    pickerRows.map((child) => {
-                      const selected = String(selectedChildId ?? '').trim() === child.id;
-                      return (
-                        <button
-                          key={child.id}
-                          type="button"
-                          onClick={() => {
-                            onChildIdChange(child.id);
-                            setChildPickerOpen(false);
-                          }}
-                          className={`block w-full rounded-[6px] py-2.5 pr-3 text-right text-[18px] font-medium leading-none transition-colors ${
-                            selected
-                              ? 'bg-[#FFC721] text-[#FFFCF9]'
-                              : 'bg-transparent text-[#706963] hover:bg-[#EBE4D9]/60'
-                          }`}
-                        >
-                          {child.label}
-                        </button>
-                      );
-                    })
-                  )}
+                  {REGISTERED_CHILDREN_DUMMY.map((child) => {
+                    const selected = selectedChildId === child.id;
+                    return (
+                      <button
+                        key={child.id}
+                        type="button"
+                        onClick={() => {
+                          onChildIdChange(child.id);
+                          setChildPickerOpen(false);
+                        }}
+                        className={`block w-full rounded-[6px] py-2.5 pr-3 text-right text-[18px] font-medium leading-none transition-colors ${
+                          selected
+                            ? 'bg-[#FFC721] text-[#FFFCF9]'
+                            : 'bg-transparent text-[#706963] hover:bg-[#EBE4D9]/60'
+                        }`}
+                      >
+                        {child.fullName}
+                      </button>
+                    );
+                  })}
                 </div>
               ) : null}
             </div>

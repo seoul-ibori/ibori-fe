@@ -16,12 +16,7 @@ const SHARE_SEPARATOR = '';
 
 const buildSharedQuestionUrl = ({ childName, profileColor, questions }) => {
   const text = [childName, profileColor, ...questions].join(SHARE_SEPARATOR);
-  const bytes = new TextEncoder().encode(text);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  const encoded = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const encoded = compressToEncodedURIComponent(text);
   return `https://ibori.site/shared-question?d=${encoded}`;
 };
 
