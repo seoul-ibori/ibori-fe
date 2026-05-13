@@ -231,8 +231,8 @@ export default function Calendar({ filterChildId = null }) {
   }, [viewYear, viewMonth, filterChildId, childrenRaw]);
 
   return (
-    <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white px-6 pb-6 pt-5">
-      <div className="mb-5 shrink-0">
+    <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white px-6 pb-6 pt-0">
+      <div className="mb-3 shrink-0">
         <CalendarPeriodHeader
           textColor="text-[#AB4C0A]"
           year={viewYear}

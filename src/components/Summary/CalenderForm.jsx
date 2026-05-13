@@ -16,8 +16,6 @@ function InfoItem({
   highlight = false,
   muted = false,
   danger = false,
-  iconLift = 'none',
-  rowNudgeDown = false,
 }) {
   const textClass = danger
     ? 'text-[12px] font-medium leading-none text-[#C45C4A]'
@@ -29,16 +27,9 @@ function InfoItem({
           ? 'text-[12px] font-semibold leading-none text-[#E28702]'
           : 'text-[12px] font-medium leading-none text-[#706963]';
 
-  const isPillRow = iconLift === 'pill';
-  const rowLiftClass = isPillRow ? '-translate-y-2.5' : '';
-  const rowDownClass = rowNudgeDown ? 'translate-y-1' : '';
-  const iconOnlyLiftClass = !isPillRow && recording && !rowNudgeDown ? '-translate-y-0.5' : '';
-
   return (
-    <div className={`flex items-center gap-3 ${rowLiftClass} ${rowDownClass}`}>
-      <span
-        className={`flex size-6 shrink-0 items-center justify-center rounded-full bg-[#FFC721] ${iconOnlyLiftClass}`}
-      >
+    <div className="flex items-center gap-3">
+      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#FFC721]">
         {icon}
       </span>
       <p className={textClass}>{text}</p>
@@ -164,10 +155,14 @@ export default function CalenderForm({
     : 'text-[18px] font-semibold leading-none text-[#8D8782]';
 
   return (
-    <div className="mx-6 mb-4 rounded-[22px] border border-[#FFC721] bg-white px-5 pb-5 pt-7">
-      <div className={`flex items-center justify-between ${fromRecording ? 'mb-6' : 'mb-8'}`}>
-        <p className={titleClass}>{label}</p>
-        <p className="text-[15px] font-medium leading-none text-[#706963]">{time}</p>
+    <div className="-mt-3 mx-6 mb-4 rounded-[22px] border border-[#FFC721] bg-white px-5 pb-2 pt-4">
+      <div className="flex min-h-[24px] items-start justify-between">
+        <p
+          className={`${titleClass} max-w-[70%] overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]`}
+        >
+          {label}
+        </p>
+        <p className="shrink-0 text-[15px] font-medium leading-none text-[#706963]">{time}</p>
       </div>
 
       {numericRecordId != null && detailLoading ? (
@@ -179,23 +174,20 @@ export default function CalenderForm({
         </p>
       ) : null}
 
-      <div className={`space-y-4 ${fromRecording ? '-mt-1' : ''}`}>
+      <div className="-mt-4 space-y-3">
         {displayLocation ? (
           <InfoItem
             icon={<PlaceIcon className="size-3 [&_path]:fill-[#AB4C0A]" />}
             text={displayLocation}
             recording={fromRecording}
-            rowNudgeDown={fromRecording}
           />
         ) : null}
         {displayChild ? (
-          <div className="pt-1">
-            <InfoItem
-              icon={<HumanIcon className="size-[10px] [&_path]:fill-[#AB4C0A]" />}
-              text={displayChild}
-              recording={fromRecording}
-            />
-          </div>
+          <InfoItem
+            icon={<HumanIcon className="size-[10px] [&_path]:fill-[#AB4C0A]" />}
+            text={displayChild}
+            recording={fromRecording}
+          />
         ) : null}
         {displayMemo ? (
           <InfoItem
@@ -217,7 +209,6 @@ export default function CalenderForm({
             }
             muted={medicineRowMuted}
             danger={medicineRowDanger}
-            iconLift="pill"
           />
         ) : null}
       </div>
@@ -233,7 +224,7 @@ export default function CalenderForm({
               scheduleTitle: label,
             })
           }
-          className="mt-6 rounded-[14px] text-[18px] font-semibold leading-none"
+          className="mt-2 rounded-[14px] text-[18px] font-semibold leading-none"
         >
           진료 요약 보기
         </Button>
@@ -249,7 +240,7 @@ export default function CalenderForm({
               childLabelColor,
             })
           }
-          className="mt-10 rounded-[14px] text-[18px] font-semibold leading-none"
+          className="mt-8 rounded-[14px] text-[18px] font-semibold leading-none"
         >
           일정에 녹음 추가하기
         </Button>
