@@ -220,6 +220,7 @@ export default function CalenderForm({
           onClick={() =>
             onViewSummary({
               childName: detail?.childName ?? displayChild,
+              childLabelColor,
               recordId: numericRecordId,
               scheduleTitle: label,
             })
