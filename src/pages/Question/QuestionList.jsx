@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, useOutletContext } from 'react-router';
 
+import { compressToEncodedURIComponent } from 'lz-string';
+
 import RobotIcon from '@/assets/icons/question/robot_icon.svg?react';
 import Bar from '@/components/Main/Bar';
 import QuestionBox from '@/components/Question/QuestionBox';

@@ -1,5 +1,7 @@
 import { useSearchParams } from 'react-router';
 
+import { decompressFromEncodedURIComponent } from 'lz-string';
+
 import RobotIcon from '@/assets/icons/question/robot_icon.svg?react';
 import Bar from '@/components/Main/Bar';
 import QuestionBox from '@/components/Question/QuestionBox';
