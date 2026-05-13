@@ -23,9 +23,9 @@ export const deleteAiSummary = async (recordId) => {
 /**
  * `POST /api/ai-summaries`
  * - 기존 일정: `recordId` + `audioFile` (childId 생략 가능)
- * - 일정 없음: `childId` + `audioFile` → 서버가 의료 기록 생성 후 `recordId` 반환
+ * - 일정 없음: `childId` + `treatDate` + `audioFile` → 서버가 의료 기록 생성 후 `recordId` 반환
  */
-export const postAiSummary = async ({ childId, recordId, audioFile, fileName }) => {
+export const postAiSummary = async ({ childId, recordId, treatDate, audioFile, fileName }) => {
   const formData = new FormData();
   if (audioFile instanceof Blob) {
     formData.append('audioFile', audioFile, fileName || 'recording.webm');
@@ -34,6 +34,7 @@ export const postAiSummary = async ({ childId, recordId, audioFile, fileName }) 
   const params = {};
   if (childId != null && childId !== '') params.childId = childId;
   if (recordId != null && recordId !== '') params.recordId = recordId;
+  if (treatDate != null && treatDate !== '') params.treatDate = treatDate;
 
   const res = await APIService.private.post('/ai-summaries', formData, {
     params,

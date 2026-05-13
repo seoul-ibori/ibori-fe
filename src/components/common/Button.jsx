@@ -12,6 +12,7 @@ export default function Button({
   onClick,
   disabled = false,
   children,
+  className = '',
 }) {
   const [isPressed, setIsPressed] = useState(false);
 
@@ -30,7 +31,7 @@ export default function Button({
       onPointerLeave={release}
       onPointerCancel={release}
       disabled={disabled}
-      className={`flex h-14.25 items-center justify-center gap-2.75 rounded-[10.161px] px-4 py-3.5 text-[18px] font-semibold tracking-[-0.45px] transition-colors disabled:cursor-not-allowed ${width}`}
+      className={`flex h-13.25 items-center justify-center gap-2.5 rounded-[10.161px] px-4 py-3.5 text-[18px] font-semibold tracking-[-0.4px] transition-colors disabled:cursor-not-allowed ${width} ${className}`}
       style={{ backgroundColor: currentBg, color: currentText }}
     >
       {currentIcon}
