@@ -575,7 +575,7 @@ export default function Record({
           recordId={displayRecordIdForSummary}
           scheduleTitle=""
           hideScheduleCta={openedWithScheduleRecord}
-          onBack={() => setIsSummaryOpen(false)}
+          onBack={handleBack}
           onGoToSchedule={() => {
             const completedAt = recordingCompletedAt ?? new Date();
             onOpenScheduleFromSummary({
