@@ -30,7 +30,7 @@ const TABS = [
 
 export default function NavBar() {
   return (
-    <footer className="bg-white rounded-t-[20px] shadow-[0_-4px_20px_rgba(220,224,231,0.5)] mt-auto">
+    <footer className="relative z-20 mt-auto bg-white rounded-t-[20px] shadow-[0_-4px_20px_rgba(220,224,231,0.5)]">
       <nav className="flex items-center justify-center gap-22.5 py-4">
         {TABS.map((tab) => (
           <NavLink
