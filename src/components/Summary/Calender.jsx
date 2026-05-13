@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { TokenManager } from '@/api/api';
@@ -14,6 +14,7 @@ import Modal from '@/components/common/Modal';
 import { WEEK_DAYS } from '@/constants/calenderDummyData';
 import { useChildrenStore } from '@/store/childrenStore';
 import { calendarLabelBgClassFromChildren } from '@/utils/calendarChildColor';
+import { childLegalNameFromList } from '@/utils/childDisplayName';
 import { formatDateToKoreanMeridiem, hhmmToKoreanMeridiem } from '@/utils/koreanMeridiemTime';
 
 const TODAY = new Date();
@@ -65,10 +66,46 @@ function createMonthCells(year, month) {
 }
 
 function normalizeMedicalRecordList(raw) {
-  if (Array.isArray(raw)) return raw;
-  if (raw && Array.isArray(raw.data)) return raw.data;
-  if (raw && Array.isArray(raw.records)) return raw.records;
-  return [];
+  const candidates = [
+    raw,
+    raw?.data,
+    raw?.records,
+    raw?.medicalRecords,
+    raw?.result,
+    raw?.result?.data,
+    raw?.data?.records,
+    raw?.data?.medicalRecords,
+    raw?.result?.records,
+    raw?.result?.medicalRecords,
+  ];
+  const found = candidates.find(Array.isArray);
+  return found ?? [];
+}
+
+function resolveMedicalRecordChildId(record) {
+  const rawId =
+    record?.childId ??
+    record?.child?.childId ??
+    record?.child?.id ??
+    record?.childInfo?.childId ??
+    record?.childInfo?.id;
+  return rawId == null || rawId === '' ? '' : String(rawId).trim();
+}
+
+function normalizeChildName(name) {
+  return name != null ? String(name).trim() : '';
+}
+
+function resolveMedicalRecordChildName(record, children) {
+  const rawName =
+    record?.childName ??
+    record?.child?.childName ??
+    record?.child?.name ??
+    record?.childInfo?.childName ??
+    record?.childInfo?.name;
+  const childName = normalizeChildName(rawName);
+  if (childName) return childName;
+  return childLegalNameFromList(children, resolveMedicalRecordChildId(record));
 }
 
 function parseTreatDateParts(treatDate) {
@@ -96,18 +133,32 @@ function mergeApiMedicalRecordsIntoCells(
   year,
   month,
   childrenRaw,
-  filterChildId
+  filterChildId,
+  filterChildName
 ) {
   const fid = filterChildId != null && filterChildId !== '' ? String(filterChildId) : null;
+  const fname = normalizeChildName(filterChildName);
   const copy = baseCells.map((cell) => ({
     ...cell,
     events: cell.events
       ?.filter((e) => e.recordId == null)
-      .filter((e) => fid == null || String(e.childId ?? '').trim() === fid)
+      .filter((e) => {
+        const eventChildId = String(e.childId ?? '').trim();
+        const eventChildName =
+          normalizeChildName(e.childName) ||
+          normalizeChildName(e.recordingChildName) ||
+          childLegalNameFromList(childrenRaw, e.childId);
+        if (fname) return eventChildName === fname;
+        if (fid != null) return eventChildId === fid;
+        return true;
+      })
       .map((e) => ({ ...e })),
   }));
   for (const r of records) {
-    if (fid != null && String(r.childId ?? '').trim() !== fid) continue;
+    const recordChildId = resolveMedicalRecordChildId(r);
+    const recordChildName = resolveMedicalRecordChildName(r, childrenRaw);
+    if (fname && recordChildName !== fname) continue;
+    if (!fname && fid != null && recordChildId !== fid) continue;
     const t = parseTreatDateParts(r.treatDate);
     if (!t || t.y !== year || t.m !== month || !Number.isFinite(t.d)) continue;
     const idx = findCellIndexForMonthDay(copy, t.d);
@@ -117,8 +168,9 @@ function mergeApiMedicalRecordsIntoCells(
       location: r.hospitalName ?? '',
       memo: r.memo ?? '',
       time: hhmmToKoreanMeridiem(r.treatTime),
-      color: calendarLabelBgClassFromChildren(childrenRaw, r.childId),
-      childId: r.childId != null ? String(r.childId) : undefined,
+      color: calendarLabelBgClassFromChildren(childrenRaw, recordChildId, recordChildName),
+      childId: recordChildId || undefined,
+      childName: recordChildName || undefined,
       recordId: r.recordId,
     };
     const cell = copy[idx];
@@ -128,7 +180,44 @@ function mergeApiMedicalRecordsIntoCells(
   return copy;
 }
 
-export default function Calendar({ filterChildId = null }) {
+function filterEventsByChild(events, filterChildId, filterChildName, children) {
+  if (!Array.isArray(events) || events.length === 0) return events;
+  const fid = filterChildId != null && filterChildId !== '' ? String(filterChildId).trim() : '';
+  const fname = normalizeChildName(filterChildName);
+  if (!fid && !fname) return events;
+  return events.filter((event) => {
+    const eventChildId = String(event?.childId ?? '').trim();
+    const eventChildName =
+      normalizeChildName(event?.childName) ||
+      normalizeChildName(event?.recordingChildName) ||
+      childLegalNameFromList(children, event?.childId);
+    if (fname) return eventChildName === fname;
+    return eventChildId === fid;
+  });
+}
+
+function applyChildColorsToEvents(events, children) {
+  if (!Array.isArray(events) || events.length === 0) return events;
+  return events.map((event) => {
+    const eventChildName = event?.childName ?? event?.recordingChildName ?? '';
+    const resolvedColor =
+      event?.childId != null || eventChildName
+        ? calendarLabelBgClassFromChildren(children, event?.childId, eventChildName)
+        : null;
+    return {
+      ...event,
+      color: resolvedColor ?? event?.color ?? 'bg-[#FFC721]',
+    };
+  });
+}
+
+function colorHexFromEventLabelClass(colorClass) {
+  if (typeof colorClass !== 'string') return '#FFC721';
+  const matched = colorClass.match(/#[0-9A-Fa-f]{6}/);
+  return matched ? matched[0] : '#FFC721';
+}
+
+export default function Calendar({ filterChildId = null, filterChildName = '' }) {
   const navigate = useNavigate();
   const childrenRaw = useChildrenStore((s) => s.children);
   const setChildren = useChildrenStore((s) => s.setChildren);
@@ -147,7 +236,19 @@ export default function Calendar({ filterChildId = null }) {
   const [recordingSummaryView, setRecordingSummaryView] = useState(null);
   const returnToDayIndexRef = useRef(null);
 
-  const selectedCell = selectedIndex !== null ? cells[selectedIndex] : null;
+  const visibleCells = useMemo(
+    () =>
+      cells.map((cell) => ({
+        ...cell,
+        events: applyChildColorsToEvents(
+          filterEventsByChild(cell.events, filterChildId, filterChildName, childrenRaw),
+          childrenRaw
+        ),
+      })),
+    [cells, filterChildId, filterChildName, childrenRaw]
+  );
+
+  const selectedCell = selectedIndex !== null ? visibleCells[selectedIndex] : null;
 
   const handleSaveDayEvents = useCallback(
     (nextEvents) => {
@@ -215,7 +316,8 @@ export default function Calendar({ filterChildId = null }) {
             viewYear,
             viewMonth,
             childrenRaw,
-            filterChildId
+            filterChildId,
+            filterChildName
           )
         );
       } catch (e) {
@@ -228,7 +330,7 @@ export default function Calendar({ filterChildId = null }) {
     return () => {
       cancelled = true;
     };
-  }, [viewYear, viewMonth, filterChildId, childrenRaw]);
+  }, [viewYear, viewMonth, filterChildId, filterChildName, childrenRaw]);
 
   return (
     <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white px-6 pb-6 pt-0">
@@ -255,7 +357,7 @@ export default function Calendar({ filterChildId = null }) {
             </div>
           ))}
 
-          {cells.map((cell, index) => (
+          {visibleCells.map((cell, index) => (
             <button
               type="button"
               key={`${cell.day}-${index}`}
@@ -288,8 +390,13 @@ export default function Calendar({ filterChildId = null }) {
                     className={`truncate rounded-[2px] px-1 py-0.5 text-[8px] font-medium ${
                       event.fromRecording
                         ? 'border border-[#FF3D00] bg-[#FFFCF9] text-[#FF3D00]'
-                        : `text-[#FFFCF9] ${event.color}`
+                        : 'text-[#FFFCF9]'
                     }`}
+                    style={
+                      event.fromRecording
+                        ? undefined
+                        : { backgroundColor: colorHexFromEventLabelClass(event.color) }
+                    }
                   >
                     {event.label}
                   </div>
