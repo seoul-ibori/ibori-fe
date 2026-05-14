@@ -287,7 +287,7 @@ export default function SearchHospital() {
             type="button"
             onClick={toggleDrawer}
             aria-expanded={drawerOpen}
-            className={`pointer-events-auto flex items-center gap-1.25 self-start rounded-md px-2.5 py-1.75 shadow-[0_0_8px_rgba(0,0,0,0.15)] transition-colors ${
+            className={`pointer-events-auto flex ml-4 items-center gap-1.25 self-start rounded-md px-2.5 py-1.75 shadow-[0_0_8px_rgba(0,0,0,0.15)] transition-colors ${
               drawerOpen ? 'bg-[#e28702]' : 'bg-[#ffc721]'
             }`}
           >
