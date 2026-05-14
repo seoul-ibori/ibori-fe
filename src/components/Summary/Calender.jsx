@@ -367,12 +367,12 @@ export default function Calendar({ filterChildId = null, filterChildName = '' })
               }`}
             >
               <div
-                className={`flex h-6 shrink-0 items-center justify-center text-[10px] font-bold leading-none ${
+                className={`flex h-6 shrink-0 items-center justify-center text-[14px] font-bold leading-none ${
                   cell.muted ? 'text-[#252525]/50' : 'text-[#252525]'
                 }`}
               >
                 {selectedIndex === index ? (
-                  <span className="flex size-[18px] items-center justify-center rounded-full bg-[#FFC721] text-[10px] text-white">
+                  <span className="flex size-[20px] items-center justify-center rounded-full bg-[#FFC721] text-[14px] text-white">
                     {cell.day}
                   </span>
                 ) : (

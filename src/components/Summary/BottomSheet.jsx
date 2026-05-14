@@ -132,11 +132,24 @@ export default function BottomSheet({
   const [addFormPrimaryBg, setAddFormPrimaryBg] = useState('#FFC721');
   const [addFormRecordingMeta, setAddFormRecordingMeta] = useState(null);
   const [isPostingSchedule, setIsPostingSchedule] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
   const prefillConsumedRef = useRef(onScheduleAddPrefillConsumed);
 
   useEffect(() => {
     prefillConsumedRef.current = onScheduleAddPrefillConsumed;
   }, [onScheduleAddPrefillConsumed]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const rafId = window.requestAnimationFrame(() => {
+      setSheetVisible(true);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [isOpen]);
 
   const exitEditModesFully = useCallback(() => {
     setSelectedEditRowIndex(null);
@@ -429,7 +442,9 @@ export default function BottomSheet({
 
   return (
     <div
-      className={`fixed bottom-0 left-1/2 z-50 w-full max-w-112.5 -translate-x-1/2 bg-white shadow-[0_-8px_20px_rgba(18,18,23,0.1)] ${
+      className={`fixed bottom-0 left-1/2 z-50 w-full max-w-112.5 -translate-x-1/2 bg-white shadow-[0_-8px_20px_rgba(18,18,23,0.1)] transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        sheetVisible ? 'translate-y-0' : 'translate-y-[calc(100%+24px)]'
+      } ${
         isFormMode
           ? 'flex flex-col rounded-tl-[20px] rounded-tr-[30px] pt-[12px]'
           : 'rounded-t-[28px] pt-7'
