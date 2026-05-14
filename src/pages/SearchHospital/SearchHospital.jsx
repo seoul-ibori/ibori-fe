@@ -272,7 +272,10 @@ export default function SearchHospital() {
       {searchFocused && <div className="absolute inset-0 z-15 bg-white" />}
 
       <div className="pointer-events-none w-full px-4 absolute items-center top-4.5 z-20 flex flex-col gap-3">
-        <div className="pointer-events-auto flex items-center gap-3 " onClick={closeAllDrawers}>
+        <div
+          className="pointer-events-auto flex w-full items-center gap-3"
+          onClick={closeAllDrawers}
+        >
           <SearchBar
             value={keyword}
             onChange={handleKeywordChange}
@@ -287,7 +290,7 @@ export default function SearchHospital() {
             type="button"
             onClick={toggleDrawer}
             aria-expanded={drawerOpen}
-            className={`pointer-events-auto flex ml-4 items-center gap-1.25 self-start rounded-md px-2.5 py-1.75 shadow-[0_0_8px_rgba(0,0,0,0.15)] transition-colors ${
+            className={`pointer-events-auto flex items-center gap-1.25 self-start rounded-md px-2.5 py-1.75 shadow-[0_0_8px_rgba(0,0,0,0.15)] transition-colors ${
               drawerOpen ? 'bg-[#e28702]' : 'bg-[#ffc721]'
             }`}
           >
