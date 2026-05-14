@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import ChevronLeft from '@/assets/icons/arrow_left_icon.svg?react';
 import ChevronRight from '@/assets/icons/arrow_right_icon.svg?react';
@@ -71,6 +71,10 @@ export default function CalendarPeriodHeader({
     setMonthOpen(false);
   };
 
+  const scrollSelectedIntoView = useCallback((el) => {
+    if (el) el.scrollIntoView({ block: 'nearest' });
+  }, []);
+
   return (
     <div className={`flex items-center justify-between ${className}`}>
       <button
@@ -106,6 +110,7 @@ export default function CalendarPeriodHeader({
               {yearList.map((y) => (
                 <li key={y}>
                   <button
+                    ref={y === year ? scrollSelectedIntoView : undefined}
                     type="button"
                     onClick={() => handleSelectYear(y)}
                     className={`w-full px-3 py-2 text-left text-[15px] font-medium ${
@@ -143,6 +148,7 @@ export default function CalendarPeriodHeader({
               {monthList.map((m) => (
                 <li key={m}>
                   <button
+                    ref={m === month ? scrollSelectedIntoView : undefined}
                     type="button"
                     onClick={() => handleSelectMonth(m)}
                     className={`w-full px-3 py-2 text-left text-[15px] font-medium ${
