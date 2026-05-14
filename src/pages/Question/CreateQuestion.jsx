@@ -222,7 +222,7 @@ export default function CreateQuestion() {
                       placeholder=""
                       className="flex-1 border-l-2 border-[#EBE4D9] pl-2 bg-transparent text-[15px] text-[#1D1B1A] outline-none placeholder:text-[#A8A19A]"
                     />
-                    <span className="text-[15px] text-[#A8A19A]">일</span>
+                    <span className="text-[15px] text-[#A8A19A]">일 전</span>
                   </div>
                 </StatusQuestionBox>
               ) : (
