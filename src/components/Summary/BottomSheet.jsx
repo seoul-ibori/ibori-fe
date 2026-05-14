@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { deleteMedicalRecord, patchMedicalRecord, postMedicalRecord } from '@/api/medicalRecord';
 import CalendarIcon from '@/assets/icons/calender.svg?react';
 import DownArrowIcon from '@/assets/icons/down-arrow.svg?react';
+import LeftArrowIcon from '@/assets/icons/left-arrow.svg?react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
 import TrashIcon from '@/assets/icons/trash.svg?react';
 import { SwipeableEventRow } from '@/components/Summary/CalendarDelete';
@@ -415,7 +416,7 @@ export default function BottomSheet({
   const editFormHeaderDateBlock = (
     <div className="mt-[10px] flex items-center gap-4">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center">
-        <CalendarIcon className="size-10" />
+        <CalendarIcon className="size-8" />
       </div>
       <div>
         <p className="mt-[4px] text-[16px] font-medium leading-none text-[#706963]">
@@ -429,10 +430,13 @@ export default function BottomSheet({
   return (
     <div
       className={`fixed bottom-0 left-1/2 z-50 w-full max-w-112.5 -translate-x-1/2 bg-white shadow-[0_-8px_20px_rgba(18,18,23,0.1)] ${
-        isFormMode ? 'rounded-tl-[20px] rounded-tr-[30px] pt-[15px]' : 'rounded-t-[28px] pt-7'
+        isFormMode
+          ? 'flex flex-col rounded-tl-[20px] rounded-tr-[30px] pt-[12px]'
+          : 'rounded-t-[28px] pt-7'
       }`}
+      style={isFormMode ? { height: 'min(34rem, calc(100dvh - 7.5rem))' } : undefined}
     >
-      <div className="px-6 pb-4">
+      <div className="shrink-0 px-6 pb-4">
         {isFormMode ? (
           <div className="mb-1 flex items-center justify-between gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-4">
@@ -447,9 +451,9 @@ export default function BottomSheet({
                   }
                   backToEditList();
                 }}
-                className="-ml-1 flex size-[25px] shrink-0 items-center justify-center rounded-[8.5px] bg-[#F0F2F5] text-[20px] font-bold leading-none text-[#706963]"
+                className="-ml-1 mt-3 flex size-[25px] shrink-0 items-center justify-center rounded-[8.5px] bg-[#F0F2F5] text-[#706963]"
               >
-                ‹
+                <LeftArrowIcon className="h-[12px] w-[9px]" />
               </button>
               <div className="min-w-0 flex-1">{editFormHeaderDateBlock}</div>
             </div>
@@ -522,34 +526,36 @@ export default function BottomSheet({
       ) : null}
 
       {isFormMode ? (
-        <CalenderEdit
-          key={isAddingForm ? 'schedule-add' : `schedule-edit-${editingIndex ?? 'x'}`}
-          title={formDraft.label}
-          location={formDraft.location}
-          memo={formDraft.memo}
-          timeDisplay={formDraft.time}
-          selectedChildId={formDraft.childId}
-          childrenList={childrenFromApi}
-          showChildSelect={isAddingForm || patchTargetRecordId != null}
-          highlightHospitalLocation={highlightHospitalLocation}
-          onTitleChange={(v) => setFormDraft((p) => ({ ...p, label: v }))}
-          onLocationChange={(v) => {
-            setFormDraft((p) => ({ ...p, location: v }));
-            if (v.trim()) setHighlightHospitalLocation(false);
-          }}
-          onMemoChange={(v) => setFormDraft((p) => ({ ...p, memo: v }))}
-          onTimeChange={(v) => setFormDraft((p) => ({ ...p, time: v }))}
-          onChildIdChange={(id) =>
-            setFormDraft((p) => ({
-              ...p,
-              childId: id,
-              color:
-                id != null && String(id).trim() !== ''
-                  ? calendarLabelBgClassFromChildren(childrenFromApi, id)
-                  : 'bg-[#FFC721]',
-            }))
-          }
-        />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <CalenderEdit
+            key={isAddingForm ? 'schedule-add' : `schedule-edit-${editingIndex ?? 'x'}`}
+            title={formDraft.label}
+            location={formDraft.location}
+            memo={formDraft.memo}
+            timeDisplay={formDraft.time}
+            selectedChildId={formDraft.childId}
+            childrenList={childrenFromApi}
+            showChildSelect={isAddingForm || patchTargetRecordId != null}
+            highlightHospitalLocation={highlightHospitalLocation}
+            onTitleChange={(v) => setFormDraft((p) => ({ ...p, label: v }))}
+            onLocationChange={(v) => {
+              setFormDraft((p) => ({ ...p, location: v }));
+              if (v.trim()) setHighlightHospitalLocation(false);
+            }}
+            onMemoChange={(v) => setFormDraft((p) => ({ ...p, memo: v }))}
+            onTimeChange={(v) => setFormDraft((p) => ({ ...p, time: v }))}
+            onChildIdChange={(id) =>
+              setFormDraft((p) => ({
+                ...p,
+                childId: id,
+                color:
+                  id != null && String(id).trim() !== ''
+                    ? calendarLabelBgClassFromChildren(childrenFromApi, id)
+                    : 'bg-[#FFC721]',
+              }))
+            }
+          />
+        </div>
       ) : (
         <div>
           {listEvents.length > 0 ? (
@@ -700,7 +706,7 @@ export default function BottomSheet({
         </div>
       )}
 
-      <div className={`px-6 pb-6 ${isFormMode ? 'pt-3' : 'pt-8'}`}>
+      <div className={`shrink-0 px-6 pb-6 ${isFormMode ? 'pt-8' : 'pt-8'}`}>
         {deleteMode ? (
           <>
             <button
