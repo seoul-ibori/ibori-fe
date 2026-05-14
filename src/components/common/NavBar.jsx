@@ -40,12 +40,24 @@ export default function NavBar() {
             className="flex flex-col items-center gap-1.5"
           >
             {({ isActive }) => {
-              const Icon = isActive ? tab.ActiveIcon : tab.InactiveIcon;
+              const InactiveIcon = tab.InactiveIcon;
+              const ActiveIcon = tab.ActiveIcon;
               return (
                 <>
-                  <Icon className="size-7.5" />
+                  <span className="relative block size-7.5">
+                    <InactiveIcon
+                      className={`absolute inset-0 size-7.5 transition-all duration-550 ease-out ${
+                        isActive ? 'scale-90 opacity-0' : 'scale-100 opacity-100'
+                      }`}
+                    />
+                    <ActiveIcon
+                      className={`absolute inset-0 size-7.5 transition-all duration-550 ease-out ${
+                        isActive ? 'scale-100 opacity-100' : 'scale-110 opacity-0'
+                      }`}
+                    />
+                  </span>
                   <span
-                    className={`text-xs font-medium tracking-[-0.48px] ${
+                    className={`text-xs font-medium tracking-[-0.48px] transition-colors duration-450 ease-out ${
                       isActive ? 'text-[#FFC721]' : 'text-[#7D7D7D]'
                     }`}
                   >
