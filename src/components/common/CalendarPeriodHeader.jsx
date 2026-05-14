@@ -16,6 +16,7 @@ export default function CalendarPeriodHeader({
   month,
   onChange,
   className = 'px-6',
+  prevButtonClassName = '',
 }) {
   const today = new Date();
   const currentYear = today.getFullYear();
@@ -77,7 +78,7 @@ export default function CalendarPeriodHeader({
         type="button"
         onClick={handlePrev}
         aria-label="이전 달"
-        className="flex size-9.75 items-center justify-center rounded-full bg-white shadow-[0_0.891px_0.446px_rgba(0,14,51,0.05)]"
+        className={`flex size-9.75 items-center justify-center rounded-full bg-white shadow-[0_0.891px_0.446px_rgba(0,14,51,0.05)] ${prevButtonClassName}`}
       >
         <ChevronLeft />
       </button>
