@@ -45,7 +45,7 @@ function formatBirthDateDisplay(digits) {
   if (digits.length >= 5) result += ` ${digits.slice(4, 6)}`;
   if (digits.length >= 6) result += '월';
   if (digits.length >= 7) result += ` ${digits.slice(6, 8)}`;
-  if (digits.length >= 8) result += '일';
+  if (digits.length >= 8) result += '일생';
   return result;
 }
 
@@ -138,7 +138,7 @@ export default function EditChild() {
             />
           ) : (
             <div className="text-[#B9B2A6] text-[18px] font-medium border-b border-[#EBE4D9]">
-              {editedChild?.birthDate ?? '생년월일'}
+              {formatBirthDateDisplay(editedChild?.birthDate) ?? '생년월일'}
             </div>
           )}
         </div>
