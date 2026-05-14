@@ -50,14 +50,14 @@ export default function CalenderEdit({
   const locationRowBorder = highlightHospitalLocation ? 'border-[#FF3D00]' : 'border-[#CFD2DA]/80';
 
   return (
-    <div className="px-6 pb-4 pt-1">
+    <div className="px-6 pb-1 pt-1">
       <div className="border-t-[0.2px] border-[#CFD2DA]/80 pt-5">
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
           <div className="space-y-[5px]">
             <p className="text-[15px] font-medium leading-normal text-[#706963]">일정 수정하기</p>
             <p className="text-[18px] font-bold leading-normal text-black">정보를 작성해주세요</p>
           </div>
-          <div className="mt-0.5 border-t-[0.2px] border-[#CFD2DA]/80" aria-hidden />
+          <div className="border-t-[0.2px] border-[#CFD2DA]/80" aria-hidden />
           <CalenderDateEdit
             key={timeDisplay}
             timeDisplay={timeDisplay}
