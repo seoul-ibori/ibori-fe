@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useOutletContext, useSearchParams } from 'react-router';
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router';
 
 import { TokenManager } from '@/api/api';
 import { signUp } from '@/api/auth';
@@ -25,6 +25,7 @@ const STEP1_DRAFT_KEY = 'signup:step1';
 const STEP2_DRAFT_KEY = 'signup:step2';
 const CODEF_BODY_KEY = 'signup:codefBody';
 const CODEF_TWOWAY_KEY = 'signup:codefTwoWayInfo';
+const SIGNUP_DONE_KEY = 'signup:signUpDone';
 
 const RELATION_TO_ROLE = {
   아빠: 'FATHER',
@@ -61,7 +62,7 @@ function buildCodefBody(step1Draft, step2Data) {
     id: step1Draft?.userId ?? '',
     startDate: formatYYYYMMDD(step2Data.periodStart),
     endDate: formatYYYYMMDD(step2Data.periodEnd),
-    type: '1',
+    type: '2',
     drugImageYN: '0',
     medicationDirectionYN: '0',
     detailYN: '0',
@@ -98,6 +99,7 @@ function buildSignUpPayload(step1, isFirst) {
 }
 
 export default function SignUp() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setIsLoading, showToast } = useOutletContext();
   const method = searchParams.get('method'); // 'first' | 'existing'
@@ -136,6 +138,18 @@ export default function SignUp() {
     setIsLoading(true);
     try {
       const result = await postMedicalRecords(codefBody);
+      if (result?.resultCode === 'CF-00000') {
+        clearDraft(STEP1_DRAFT_KEY);
+        clearDraft(STEP2_DRAFT_KEY);
+        clearDraft(CODEF_BODY_KEY);
+        clearDraft(CODEF_TWOWAY_KEY);
+        sessionStorage.removeItem(SIGNUP_DONE_KEY);
+        showToast(
+          '건강보험공단에 자녀가 등록되어 있지 않습니다. 등록 완료 후 서비스 이용 부탁드립니다.'
+        );
+        navigate('/login');
+        return;
+      }
       sessionStorage.setItem(CODEF_BODY_KEY, JSON.stringify(codefBody));
       sessionStorage.setItem(CODEF_TWOWAY_KEY, JSON.stringify(result?.twoWayInfo ?? {}));
       goToStep('auth');
@@ -154,19 +168,28 @@ export default function SignUp() {
     if (!step1Draft || !codefBody) return;
     setIsLoading(true);
     try {
-      const data = await signUp(buildSignUpPayload(step1Draft, true));
-      saveAuthData(data);
-      await postMedicalRecords2Way({
+      const alreadySignedUp = sessionStorage.getItem(SIGNUP_DONE_KEY) === '1';
+      if (!alreadySignedUp) {
+        const data = await signUp(buildSignUpPayload(step1Draft, true));
+        saveAuthData(data);
+        sessionStorage.setItem(SIGNUP_DONE_KEY, '1');
+      }
+      const result = await postMedicalRecords2Way({
         ...codefBody,
         simpleAuth: '1',
         secureNo: '',
         secureNoRefresh: '0',
         twoWayInfo: twoWayInfo ?? {},
       });
+      if (result?.resultCode === 'CF-03002') {
+        showToast('카카오톡 인증을 완료해주세요.');
+        return;
+      }
       clearDraft(STEP1_DRAFT_KEY);
       clearDraft(STEP2_DRAFT_KEY);
       clearDraft(CODEF_BODY_KEY);
       clearDraft(CODEF_TWOWAY_KEY);
+      sessionStorage.removeItem(SIGNUP_DONE_KEY);
       goToStep('done');
     } catch (error) {
       console.log('회원가입 실패', error);

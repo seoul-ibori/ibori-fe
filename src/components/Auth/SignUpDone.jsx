@@ -13,7 +13,7 @@ export default function SignUpDone({ variant = 'full' }) {
     <div className="flex min-h-screen flex-col">
       <div className={`flex flex-1 flex-col items-center px-6 justify-center`}>
         <AuthenticationIcon className="size-21" />
-        <h1 className="mt-4 text-center text-[28px] font-bold leading-[44px] text-[#1D1B1A]">
+        <h1 className="mt-4 text-center text-[28px] font-bold leading-11 text-[#1D1B1A]">
           {isFull ? (
             <>
               회원가입 및 인증이
