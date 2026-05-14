@@ -20,6 +20,7 @@ import { formatDateToKoreanMeridiem, hhmmToKoreanMeridiem } from '@/utils/korean
 const TODAY = new Date();
 const INITIAL_VIEW_YEAR = TODAY.getFullYear();
 const INITIAL_VIEW_MONTH = TODAY.getMonth() + 1;
+const BOTTOM_SHEET_CLOSE_MS = 800;
 
 function toTreatDateYmd(year, month, day) {
   if (typeof day !== 'number' || day < 1 || day > 31) return '';
@@ -224,6 +225,7 @@ export default function Calendar({ filterChildId = null, filterChildName = '' })
   const [viewYear, setViewYear] = useState(INITIAL_VIEW_YEAR);
   const [viewMonth, setViewMonth] = useState(INITIAL_VIEW_MONTH);
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const [closingSheetIndex, setClosingSheetIndex] = useState(null);
   const [cells, setCells] = useState(() => createMonthCells(INITIAL_VIEW_YEAR, INITIAL_VIEW_MONTH));
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [isVoiceChildSelectOpen, setIsVoiceChildSelectOpen] = useState(false);
@@ -235,6 +237,15 @@ export default function Calendar({ filterChildId = null, filterChildName = '' })
   const [scheduleAddPrefill, setScheduleAddPrefill] = useState(null);
   const [recordingSummaryView, setRecordingSummaryView] = useState(null);
   const returnToDayIndexRef = useRef(null);
+  const sheetCloseTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (sheetCloseTimerRef.current) {
+        window.clearTimeout(sheetCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   const visibleCells = useMemo(
     () =>
@@ -248,7 +259,8 @@ export default function Calendar({ filterChildId = null, filterChildName = '' })
     [cells, filterChildId, filterChildName, childrenRaw]
   );
 
-  const selectedCell = selectedIndex !== null ? visibleCells[selectedIndex] : null;
+  const activeSheetIndex = selectedIndex ?? closingSheetIndex;
+  const selectedCell = activeSheetIndex !== null ? visibleCells[activeSheetIndex] : null;
 
   const handleSaveDayEvents = useCallback(
     (nextEvents) => {
@@ -264,7 +276,20 @@ export default function Calendar({ filterChildId = null, filterChildName = '' })
     },
     [selectedIndex]
   );
-  const selectedWeekDay = selectedIndex !== null ? WEEK_DAYS[selectedIndex % 7]?.label : '';
+  const selectedWeekDay = activeSheetIndex !== null ? WEEK_DAYS[activeSheetIndex % 7]?.label : '';
+
+  const handleCloseBottomSheet = useCallback(() => {
+    if (selectedIndex === null) return;
+    if (sheetCloseTimerRef.current) {
+      window.clearTimeout(sheetCloseTimerRef.current);
+    }
+    setClosingSheetIndex(selectedIndex);
+    setSelectedIndex(null);
+    sheetCloseTimerRef.current = window.setTimeout(() => {
+      setClosingSheetIndex(null);
+      sheetCloseTimerRef.current = null;
+    }, BOTTOM_SHEET_CLOSE_MS);
+  }, [selectedIndex]);
 
   const resolveRecordingCellIndex = useCallback(() => {
     if (selectedIndex !== null) return selectedIndex;
@@ -440,87 +465,91 @@ export default function Calendar({ filterChildId = null, filterChildName = '' })
         </div>
       </div>
 
-      {selectedIndex !== null && (
+      {activeSheetIndex !== null && (
         <button
           type="button"
           aria-label="오버레이 닫기"
-          onClick={() => setSelectedIndex(null)}
-          className="fixed inset-0 z-40 bg-black/35"
+          onClick={handleCloseBottomSheet}
+          className={`fixed inset-0 z-40 bg-black/35 transition-opacity duration-650 ${
+            selectedIndex !== null ? 'opacity-100' : 'opacity-0'
+          }`}
         />
       )}
 
-      <BottomSheet
-        key={
-          selectedCell != null && selectedIndex !== null
-            ? `${selectedCell.day}-${selectedIndex}`
-            : 'sheet-closed'
-        }
-        isOpen={selectedIndex !== null}
-        selectedLabel={
-          selectedCell ? `${selectedCell.month}월 ${selectedCell.day}일 ${selectedWeekDay}요일` : ''
-        }
-        events={selectedCell?.events ?? []}
-        onClose={() => setSelectedIndex(null)}
-        onSaveEvents={handleSaveDayEvents}
-        treatDate={
-          selectedCell
-            ? toTreatDateYmd(selectedCell.year, selectedCell.month, selectedCell.day)
-            : ''
-        }
-        selectedYear={selectedCell?.year ?? viewYear}
-        scheduleAddPrefill={scheduleAddPrefill}
-        onScheduleAddPrefillConsumed={clearSchedulePrefill}
-        summaryDateText={
-          selectedCell ? `${selectedCell.year}년 ${selectedCell.month}월 ${selectedCell.day}일` : ''
-        }
-        onViewRecordingSummary={(payload) => {
-          const rawRid = payload?.recordId;
-          const recordIdNum =
-            rawRid != null &&
-            rawRid !== '' &&
-            Number.isFinite(Number(rawRid)) &&
-            Number(rawRid) >= 1
-              ? Number(rawRid)
-              : null;
-          setRecordingSummaryView({
-            childName: payload.childName || '우리집 아들',
-            childLabelColor: payload.childLabelColor || '#5AA7FF',
-            summaryDateText: payload.summaryDateText ?? '',
-            eventIndex: typeof payload.eventIndex === 'number' ? payload.eventIndex : -1,
-            recordId: recordIdNum,
-            scheduleTitle: typeof payload.scheduleTitle === 'string' ? payload.scheduleTitle : '',
-          });
-        }}
-        onRequestRecording={(payload) => {
-          const returnIdx = selectedIndex;
-          const rid = payload?.recordId;
-          const hasRecord =
-            rid != null && rid !== '' && Number.isFinite(Number(rid)) && Number(rid) >= 1;
-          if (hasRecord) {
-            returnToDayIndexRef.current = returnIdx;
-            setRecordingOpenedFromSchedule(true);
-            setRecordingRecordId(Number(rid));
-            setSelectedVoiceChild({
-              id: payload.childId != null ? String(payload.childId) : '',
-              name: payload.childName ?? '',
-              labelColor: payload.childLabelColor ?? '#5AA7FF',
-            });
-            const cellIdx =
-              returnIdx != null && returnIdx >= 0 ? returnIdx : resolveRecordingCellIndex();
-            setRecordingCellIndex(cellIdx);
-            setSelectedIndex(null);
-            setIsVoiceModalOpen(false);
-            setIsVoiceChildSelectOpen(false);
-            setIsRecordOpen(true);
-            return;
+      {activeSheetIndex !== null ? (
+        <BottomSheet
+          key={selectedCell != null ? `${selectedCell.day}-${activeSheetIndex}` : 'sheet-closed'}
+          isOpen={selectedIndex !== null}
+          selectedLabel={
+            selectedCell
+              ? `${selectedCell.month}월 ${selectedCell.day}일 ${selectedWeekDay}요일`
+              : ''
           }
-          returnToDayIndexRef.current = null;
-          setRecordingOpenedFromSchedule(false);
-          setRecordingRecordId(null);
-          setSelectedIndex(null);
-          setIsVoiceModalOpen(true);
-        }}
-      />
+          events={selectedCell?.events ?? []}
+          onClose={handleCloseBottomSheet}
+          onSaveEvents={handleSaveDayEvents}
+          treatDate={
+            selectedCell
+              ? toTreatDateYmd(selectedCell.year, selectedCell.month, selectedCell.day)
+              : ''
+          }
+          selectedYear={selectedCell?.year ?? viewYear}
+          scheduleAddPrefill={scheduleAddPrefill}
+          onScheduleAddPrefillConsumed={clearSchedulePrefill}
+          summaryDateText={
+            selectedCell
+              ? `${selectedCell.year}년 ${selectedCell.month}월 ${selectedCell.day}일`
+              : ''
+          }
+          onViewRecordingSummary={(payload) => {
+            const rawRid = payload?.recordId;
+            const recordIdNum =
+              rawRid != null &&
+              rawRid !== '' &&
+              Number.isFinite(Number(rawRid)) &&
+              Number(rawRid) >= 1
+                ? Number(rawRid)
+                : null;
+            setRecordingSummaryView({
+              childName: payload.childName || '우리집 아들',
+              childLabelColor: payload.childLabelColor || '#5AA7FF',
+              summaryDateText: payload.summaryDateText ?? '',
+              eventIndex: typeof payload.eventIndex === 'number' ? payload.eventIndex : -1,
+              recordId: recordIdNum,
+              scheduleTitle: typeof payload.scheduleTitle === 'string' ? payload.scheduleTitle : '',
+            });
+          }}
+          onRequestRecording={(payload) => {
+            const returnIdx = selectedIndex;
+            const rid = payload?.recordId;
+            const hasRecord =
+              rid != null && rid !== '' && Number.isFinite(Number(rid)) && Number(rid) >= 1;
+            if (hasRecord) {
+              returnToDayIndexRef.current = returnIdx;
+              setRecordingOpenedFromSchedule(true);
+              setRecordingRecordId(Number(rid));
+              setSelectedVoiceChild({
+                id: payload.childId != null ? String(payload.childId) : '',
+                name: payload.childName ?? '',
+                labelColor: payload.childLabelColor ?? '#5AA7FF',
+              });
+              const cellIdx =
+                returnIdx != null && returnIdx >= 0 ? returnIdx : resolveRecordingCellIndex();
+              setRecordingCellIndex(cellIdx);
+              setSelectedIndex(null);
+              setIsVoiceModalOpen(false);
+              setIsVoiceChildSelectOpen(false);
+              setIsRecordOpen(true);
+              return;
+            }
+            returnToDayIndexRef.current = null;
+            setRecordingOpenedFromSchedule(false);
+            setRecordingRecordId(null);
+            setSelectedIndex(null);
+            setIsVoiceModalOpen(true);
+          }}
+        />
+      ) : null}
 
       {recordingSummaryView ? (
         <SummaryRecord
