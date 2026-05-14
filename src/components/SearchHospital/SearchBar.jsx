@@ -8,7 +8,7 @@ export default function SearchBar({ value, onChange, onSubmit, focused = false, 
         e.preventDefault();
         onSubmit?.(value);
       }}
-      className="flex h-12.25 w-full items-center gap-3.25 rounded-full bg-white px-4 shadow-[0_2px_8px_1px_#dce0e7]"
+      className="flex h-12.25 min-w-0 flex-1 items-center gap-3.25 rounded-full bg-white px-4 shadow-[0_2px_8px_1px_#dce0e7]"
     >
       {focused ? (
         <button
