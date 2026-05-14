@@ -408,9 +408,9 @@ export default function Calendar({ filterChildId = null, filterChildName = '' })
       </div>
 
       <div
-        className="pointer-events-none fixed inset-x-0 z-[25] flex justify-center"
+        className="pointer-events-none fixed inset-x-0 z-10 flex justify-center"
         style={{
-          bottom: 'calc(5.75rem + env(safe-area-inset-bottom, 0px))',
+          bottom: 'calc(7.2rem + env(safe-area-inset-bottom, 0px))',
         }}
       >
         <div className="pointer-events-auto flex w-full max-w-112.5 justify-end pr-6">
@@ -423,14 +423,14 @@ export default function Calendar({ filterChildId = null, filterChildName = '' })
               setRecordingRecordId(null);
               setIsVoiceModalOpen(true);
             }}
-            className={`flex size-[68px] items-center justify-center rounded-full text-[30px] text-white shadow-[0_4px_6px_rgba(18,18,23,0.2)] ${
+            className={`flex size-13.75 items-center justify-center rounded-full shadow-[0_4px_8px_rgba(0,0,0,0.15)] ${
               isVoiceModalOpen || isVoiceChildSelectOpen || isRecordOpen
                 ? 'bg-[#E28906]'
                 : 'bg-[#FFC721]'
             }`}
           >
             <MicrophoneIcon
-              className={`size-10 ${
+              className={`size-8.25 ${
                 isVoiceModalOpen || isVoiceChildSelectOpen || isRecordOpen
                   ? '[&_rect]:fill-[#E28906]'
                   : '[&_rect]:fill-[#FFC721]'
