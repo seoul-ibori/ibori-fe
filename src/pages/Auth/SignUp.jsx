@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext, useSearchParams } from 'react-router';
 
 import { TokenManager } from '@/api/api';
@@ -8,6 +8,7 @@ import AuthenticationNeed from '@/components/Auth/AuthenticationNeed';
 import SignUpDone from '@/components/Auth/SignUpDone';
 import SignUpStep1 from '@/components/Auth/SignUpStep1';
 import SignUpStep2 from '@/components/Auth/SignUpStep2';
+import SettingModal from '@/components/Setting/SettingModal';
 
 const VALID_STEPS = new Set(['step1', 'step2', 'auth', 'done']);
 
@@ -106,6 +107,12 @@ export default function SignUp() {
   const stepParam = searchParams.get('step');
   const step = VALID_STEPS.has(stepParam) ? stepParam : 'step1';
   const isFirst = method === 'first';
+  const [showNoChildModal, setShowNoChildModal] = useState(false);
+
+  const handleCloseNoChildModal = () => {
+    setShowNoChildModal(false);
+    navigate('/login');
+  };
 
   const goToStep = (next) => {
     const params = new URLSearchParams(searchParams);
@@ -191,10 +198,7 @@ export default function SignUp() {
         clearDraft(CODEF_BODY_KEY);
         clearDraft(CODEF_TWOWAY_KEY);
         sessionStorage.removeItem(SIGNUP_DONE_KEY);
-        showToast(
-          '건강보험공단에 자녀가 등록되어 있지 않습니다. 등록 완료 후 서비스 이용 부탁드립니다.'
-        );
-        navigate('/login');
+        setShowNoChildModal(true);
         return;
       }
       clearDraft(STEP1_DRAFT_KEY);
@@ -236,24 +240,44 @@ export default function SignUp() {
     }
   }, [stepParam, searchParams, setSearchParams]);
 
+  let stepContent;
   if (step === 'done') {
-    return <SignUpDone variant={method === 'first' ? 'full' : 'simple'} />;
-  }
-
-  if (step === 'auth') {
-    return <AuthenticationNeed onComplete={handleAuthComplete} />;
-  }
-
-  if (step === 'step2') {
+    stepContent = <SignUpDone variant={method === 'first' ? 'full' : 'simple'} />;
+  } else if (step === 'auth') {
+    stepContent = <AuthenticationNeed onComplete={handleAuthComplete} />;
+  } else if (step === 'step2') {
     const step1Draft = readDraft(STEP1_DRAFT_KEY);
-    return (
+    stepContent = (
       <SignUpStep2
         name={step1Draft?.name}
         onBack={() => goToStep('step1')}
         onSubmit={handleStep2Submit}
       />
     );
+  } else {
+    stepContent = <SignUpStep1 method={method} onSubmit={handleStep1Submit} />;
   }
 
-  return <SignUpStep1 method={method} onSubmit={handleStep1Submit} />;
+  return (
+    <>
+      {stepContent}
+      {showNoChildModal && (
+        <SettingModal onClose={handleCloseNoChildModal}>
+          <div className="flex flex-col items-center gap-4 pt-3">
+            <div className="flex size-12 items-center justify-center rounded-full bg-[#FFC721]">
+              <svg viewBox="0 0 24 24" fill="none" className="size-8">
+                <path d="M12 7v6" stroke="#FFFCF9" strokeWidth="2.5" strokeLinecap="round" />
+                <circle cx="12" cy="16.5" r="1.2" fill="#FFFCF9" />
+              </svg>
+            </div>
+            <p className="text-center text-[15px] font-medium leading-[1.6] text-[#706963]">
+              건강보험공단에 자녀가 등록되어 있지 않습니다.
+              <br />
+              등록 완료 후 서비스 이용 부탁드립니다.
+            </p>
+          </div>
+        </SettingModal>
+      )}
+    </>
+  );
 }
