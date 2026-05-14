@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, ScrollRestoration } from 'react-router';
 
+import { TokenManager } from '@/api/api';
 import { getChildren } from '@/api/child';
 import Header from '@/components/common/Header';
 import NavBar from '@/components/common/NavBar';
@@ -23,10 +24,10 @@ export default function RootLayout() {
   const setChildren = useChildrenStore((s) => s.setChildren);
 
   useEffect(() => {
+    if (!TokenManager.getAccessToken()) return;
     (async () => {
       try {
         const data = await getChildren();
-        console.log(data);
         setChildren(data);
       } catch (error) {
         console.log('아이 목록 불러오기 실패', error);

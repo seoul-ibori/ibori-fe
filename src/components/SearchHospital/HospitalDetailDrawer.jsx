@@ -79,7 +79,7 @@ export default function HospitalDetailDrawer({ hospital, onClose }) {
       dismissible
     >
       <Drawer.Portal>
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-30 mx-auto flex h-[60vh] w-full max-w-112.5 flex-col rounded-tl-[20px] rounded-tr-[30px] bg-white shadow-[0_-8px_30px_rgba(18,18,23,0.15)] outline-none">
+        <Drawer.Content className="fixed inset-x-0 bottom-0 z-30 mx-auto flex h-[60vh] w-full max-w-112.5 flex-col rounded-[30px] bg-white shadow-[0_-8px_30px_rgba(18,18,23,0.15)] outline-none">
           <Drawer.Title className="sr-only">{hospital?.name ?? '병원'} 정보</Drawer.Title>
           <Drawer.Description className="sr-only">
             선택한 병원의 진료시간, 유형, 연락처를 확인할 수 있습니다.

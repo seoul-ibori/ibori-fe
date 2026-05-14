@@ -21,8 +21,8 @@ export default function Summary() {
       {children.length > 0 ? (
         <>
           <div className="h-[5px] w-full shrink-0 bg-[#FFFCF9]" aria-hidden />
-          <div className="shrink-0 no-scrollbar overflow-x-auto px-6 pb-5 pt-4">
-            <div className="flex w-max min-w-full items-end justify-start gap-8">
+          <div className="shrink-0 no-scrollbar overflow-x-auto px-6 pb-7 pt-6">
+            <div className="flex w-max min-w-full items-end justify-start gap-4">
               {children
                 .filter((c) => c.childId != null && Number.isFinite(Number(c.childId)))
                 .map((child) => {

@@ -59,7 +59,7 @@ export default function CongestionDrawer({
       dismissible
     >
       <Drawer.Portal>
-        <Drawer.Content className="fixed pb-10 inset-x-0 bottom-0 z-30 mx-auto flex h-[95vh] w-full max-w-112.5 flex-col rounded-tl-[20px] rounded-tr-[30px] bg-white shadow-[0_-8px_30px_rgba(18,18,23,0.15)] outline-none">
+        <Drawer.Content className="fixed pb-10 inset-x-0 bottom-0 z-30 mx-auto flex h-[95vh] w-full max-w-112.5 flex-col rounded-[30px] bg-white shadow-[0_-8px_30px_rgba(18,18,23,0.15)] outline-none">
           <Drawer.Title className="sr-only">병원 혼잡도 예측</Drawer.Title>
           <Drawer.Description className="sr-only">
             우리동네 소아과 혼잡도 예측 결과입니다.
