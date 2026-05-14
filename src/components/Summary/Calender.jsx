@@ -370,6 +370,7 @@ export default function Calendar({ filterChildId = null, filterChildName = '' })
             setSelectedIndex(null);
             setCells(createMonthCells(y, m));
           }}
+          prevButtonClassName="-ml-2"
           className=""
         />
       </div>

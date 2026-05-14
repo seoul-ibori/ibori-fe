@@ -473,7 +473,7 @@ export default function BottomSheet({
       } ${
         isFormMode
           ? 'flex flex-col rounded-tl-[20px] rounded-tr-[30px] pt-[12px]'
-          : 'rounded-t-[28px] pt-7'
+          : 'rounded-t-[30px] pt-7'
       }`}
       style={isFormMode ? { height: 'min(34rem, calc(100dvh - 7.5rem))' } : undefined}
     >
