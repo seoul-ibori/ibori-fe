@@ -17,7 +17,11 @@ export default function NightButton({ isDay = true, onClick }) {
           backgroundImage: 'linear-gradient(145.56deg, #47404D 27.4%, #201B24 89.7%)',
         }}
       />
-      <MoonIcon className="absolute left-1/2 top-1/2 size-9.25 -translate-x-1/2 -translate-y-1/2" />
+      <MoonIcon
+        className={`absolute left-1/2 top-1/2 size-9.25 -translate-x-1/2 -translate-y-1/2 transition-opacity ${
+          isDay ? 'opacity-50' : 'opacity-100'
+        }`}
+      />
     </button>
   );
 }

@@ -28,7 +28,7 @@ export default function CalendarPeriodHeader({
   const isCurrent = year === currentYear && month === currentMonth;
 
   const yearList = useMemo(
-    () => Array.from({ length: YEAR_RANGE }, (_, i) => currentYear - i),
+    () => Array.from({ length: YEAR_RANGE }, (_, i) => currentYear - (YEAR_RANGE - 1) + i),
     [currentYear]
   );
   const maxMonthForYear = year === currentYear ? currentMonth : 12;

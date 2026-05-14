@@ -46,7 +46,15 @@ export default function CongestionDrawer({
       onOpenChange={onOpenChange}
       snapPoints={[0.45, 0.95]}
       activeSnapPoint={snap}
-      setActiveSnapPoint={onSnapChange}
+      setActiveSnapPoint={(value) => {
+        if (value === null || value === undefined) {
+          onOpenChange(false);
+          return;
+        }
+        onSnapChange(value);
+      }}
+      fadeFromIndex={0}
+      closeThreshold={0.1}
       modal={false}
       dismissible
     >
@@ -90,13 +98,15 @@ export default function CongestionDrawer({
               <div className="border-y-15 border-[#faf7f2] px-6 py-6">
                 <p className="text-[15px] font-medium text-[#706963]">AI 수요 예측 알고리즘</p>
                 <p className="mt-1 text-[18px] font-bold text-black">왜 그런 걸까요?</p>
-                <p className="mt-3.5 text-[12px] font-medium leading-[152%] tracking-[-0.48px] text-[#706963]">
-                  다양한 의료 이용 데이터와 날씨, 운영 시간을 종합 분석하여
-                  <br />
-                  <span className="font-semibold">
-                    우리 동네 소아과의 붐빔 정도를 예측해드립니다.
-                  </span>
-                </p>
+                <div className="mt-3.5 flex justify-center text-[12px] font-medium leading-[170%] tracking-[-0.48px] text-[#706963]">
+                  <p>
+                    다양한 의료 이용 데이터와 날씨, 운영 시간을 종합 분석하여
+                    <br />
+                    <span className="font-semibold">
+                      우리 동네 소아과의 붐빔 정도를 예측해드립니다.
+                    </span>
+                  </p>
+                </div>
               </div>
 
               <div className="flex flex-col gap-2.25 px-6 pt-9">

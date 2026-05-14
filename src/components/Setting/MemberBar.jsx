@@ -21,13 +21,13 @@ export default function MemberBar({ role, roleColor, name, onDelete }) {
   };
 
   return (
-    <div className="relative h-[55px] border-b-[0.5px] border-[#FAF7F2]">
+    <div onClick={handleBarClick} className="relative h-13.75 border-b-[0.5px] border-[#FAF7F2]">
       <div
         className={`relative flex h-full items-center transition-transform duration-300 ease-out z-10 ${
           isOpen ? '-translate-x-12' : 'translate-x-0'
         }`}
       >
-        <div onClick={handleBarClick} className="flex min-w-0 flex-1 items-center gap-3 pl-0.5">
+        <div className="flex min-w-0 flex-1 items-center gap-3 pl-0.5">
           <span
             className="inline-flex items-center justify-center rounded-full px-2 py-1 text-[14px] leading-none font-medium text-white"
             style={{ backgroundColor: roleColor }}

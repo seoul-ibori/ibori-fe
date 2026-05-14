@@ -179,7 +179,7 @@ export default function Settings() {
           onAction={handleCopyInvite}
         >
           <div className="flex flex-col items-center gap-2.25 pt-5">
-            <LetterIcon />
+            <LetterIcon className="size-11" />
             <p className="text-center text-[18px] font-medium leading-7.25 text-[#706963]">
               아래 버튼을 눌러
               <br />
@@ -217,7 +217,7 @@ export default function Settings() {
       {activeModal === 'logout' && (
         <SettingModal onClose={closeModal} actionLabel="로그아웃하기" onAction={handleLogout}>
           <div className="flex flex-col items-center gap-4 pt-5">
-            <DoorIcon />
+            <DoorIcon className="size-12" />
             <p className="text-[18px] font-extrabold text-[#1D1B1A]">떠나시는 건가요?</p>
             <p className="text-center text-[15px] font-medium leading-[1.541] text-[#B9B2A6]">
               아래 버튼 클릭시, 로그아웃 후
