@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react';
 import BackButtonIcon from '@/components/common/BackButtonIcon';
 import Button from '@/components/common/Button';
 import ChildrenImgBox from '@/components/common/ChildrenImgBox';
-import ChildrenNameBox from '@/components/common/ChildrenNameBox';
 import { PROFILE_COLOR_MAP } from '@/constants/profileColorData';
 import { VOICE_CHILDREN } from '@/constants/voiceChildren';
 
@@ -11,7 +10,9 @@ import { VOICE_CHILDREN } from '@/constants/voiceChildren';
 function mapApiChildToRow(c) {
   const id = c?.childId != null ? String(c.childId) : c?.id != null ? String(c.id) : '';
   const nameRaw =
-    (c?.childName && String(c.childName).trim()) || (c?.nickname && String(c.nickname).trim());
+    (c?.nickname && String(c.nickname).trim()) ||
+    (c?.childName && String(c.childName).trim()) ||
+    (c?.name && String(c.name).trim());
   const name = nameRaw || '아이';
   const profileColor =
     typeof c?.profileColor === 'string' && c.profileColor.trim()
@@ -54,26 +55,25 @@ export default function VoiceChildSelectScreen({
           <button type="button" onClick={onClose} aria-label="뒤로가기" className="p-1">
             <BackButtonIcon color="#706963" />
           </button>
+          <p className="mt-5 ml-5 text-[18px] leading-[30px] font-semibold tracking-[-0.4px] text-[#1D1B1A]">
+            AI 음성 진료 요약
+          </p>
         </header>
 
         <div className="h-4 w-full bg-[#FAF7F2]" />
 
         <section className="bg-white px-[29px] py-[38px]">
           <h2 className="text-[18px] font-bold leading-[27px] text-black">
-            어떤 아이의 질문지를
+            진료 녹음을 진행할
             <br />
-            만들어 드릴까요?
+            아이를 선택해 주세요
           </h2>
         </section>
 
         <section>
-          {rows.map((child, index) => {
+          {rows.map((child) => {
             const selected = effectiveSelectedId === child.id;
-            const rowBg = selected
-              ? 'bg-[#A8A19A]'
-              : index % 2 === 0
-                ? 'bg-[#FFFCF9]'
-                : 'bg-[#FAF7F2]';
+            const rowBg = selected ? 'bg-[#FAF7F2]' : 'bg-[#FFFCF9]';
             return (
               <button
                 key={child.id}
@@ -86,12 +86,10 @@ export default function VoiceChildSelectScreen({
                   selected={selected}
                   className="h-[46.55px] w-[46.554px] rounded-[15.871px]"
                 />
-                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                  <ChildrenNameBox
-                    name={child.name}
-                    labelColor={child.profileColor}
-                    className="w-fit max-w-full rounded-[6px] px-2.5 py-1 text-[13px] font-medium tracking-[-0.52px]"
-                  />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[16px] leading-[24px] font-semibold tracking-[-0.32px] text-[#1D1B1A]">
+                    {child.name}
+                  </p>
                 </div>
               </button>
             );
