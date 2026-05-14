@@ -26,3 +26,7 @@ export const getCheckfamilyCode = async ({ familyCode }) => {
 
   return res.data;
 };
+
+export const deleteUser = async ({ userId }) => {
+  await APIService.public.delete(`/admin/users/${userId}`);
+};

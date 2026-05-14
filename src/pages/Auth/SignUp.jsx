@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useOutletContext, useSearchParams } from 'react-router';
 
 import { TokenManager } from '@/api/api';
-import { signUp } from '@/api/auth';
+import { deleteUser, signUp } from '@/api/auth';
 import { postMedicalRecords, postMedicalRecords2Way } from '@/api/codef';
 import AuthenticationNeed from '@/components/Auth/AuthenticationNeed';
 import SignUpDone from '@/components/Auth/SignUpDone';
@@ -193,6 +193,22 @@ export default function SignUp() {
       goToStep('done');
     } catch (error) {
       console.log('회원가입 실패', error);
+      const signedUp = sessionStorage.getItem(SIGNUP_DONE_KEY) === '1';
+      if (signedUp) {
+        const userId = localStorage.getItem('userId');
+        if (userId) {
+          try {
+            await deleteUser({ userId });
+          } catch (deleteError) {
+            console.log('회원 정보 삭제 실패', deleteError);
+          }
+        }
+        TokenManager.clear();
+        localStorage.removeItem('userId');
+        localStorage.removeItem('username');
+        localStorage.removeItem('name');
+        sessionStorage.removeItem(SIGNUP_DONE_KEY);
+      }
       showToast();
     } finally {
       setIsLoading(false);
