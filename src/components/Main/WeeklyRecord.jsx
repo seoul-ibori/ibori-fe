@@ -63,29 +63,36 @@ export default function WeeklyRecord({
         </Button>
       </div>
 
-      {barOpen && (
-        <div className="mt-4 border-y-[5px] border-[#FFFCF9] px-6.25 py-6">
-          <div className="flex items-center gap-3.25">
-            {childrenList.map((child) => {
-              const isFaded = selectedChildId !== null && selectedChildId !== child.id;
-              return (
-                <button
-                  key={child.childId}
-                  type="button"
-                  onClick={() => handleChildClick(child.childId)}
-                  className={isFaded ? 'opacity-30' : ''}
-                >
-                  <ChildrenBox
-                    name={child.nickname || child.childName}
-                    imageUrl={child.imageUrl}
-                    labelColor={child.profileColor}
-                  />
-                </button>
-              );
-            })}
+      <div
+        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
+          barOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+        }`}
+        aria-hidden={!barOpen}
+      >
+        <div className="overflow-hidden">
+          <div className="mt-4 border-y-[5px] border-[#FFFCF9] px-6.25 py-6">
+            <div className="flex items-center gap-3.25">
+              {childrenList.map((child) => {
+                const isFaded = selectedChildId !== null && selectedChildId !== child.childId;
+                return (
+                  <button
+                    key={child.childId}
+                    type="button"
+                    onClick={() => handleChildClick(child.childId)}
+                    className={isFaded ? 'opacity-30' : ''}
+                  >
+                    <ChildrenBox
+                      name={child.nickname || child.childName}
+                      imageUrl={child.imageUrl}
+                      labelColor={child.profileColor}
+                    />
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
       <div className="mt-4">
         <CalendarPeriodHeader
