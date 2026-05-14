@@ -9,7 +9,7 @@ export default function Header() {
   const isLogin = true;
   return (
     <header className="flex justify-between h-13.25 px-6 mt-12.5 items-center">
-      <LogoIcon />
+      <LogoIcon onClick={() => navigate('/')} />
       <div className=" flex gap-5.5 items-center">
         <BellIcon onClick={() => navigate(isLogin ? '/alarms' : '/login')} />
         <UserIcon onClick={() => navigate(isLogin ? '/settings' : '/login')} />
