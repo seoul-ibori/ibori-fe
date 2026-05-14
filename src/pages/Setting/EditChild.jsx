@@ -97,7 +97,7 @@ export default function EditChild() {
   };
   return (
     <div className="flex flex-col h-full pb-20 overflow-auto no-scrollbar">
-      <div className="px-6 pt-10 pb-2">
+      <div className="px-6 pt-7 pb-2">
         <button type="button" onClick={() => navigate(-1)} aria-label="뒤로가기" className="p-1">
           <BackButtonIcon color="#1D1B1A" />
         </button>

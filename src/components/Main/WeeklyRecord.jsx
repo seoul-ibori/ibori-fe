@@ -103,10 +103,7 @@ export default function WeeklyRecord({
         />
       </div>
 
-      <div className="relative mt-4 px-3.5">
-        {records.length > 1 && (
-          <div className="pointer-events-none absolute left-15.5 top-13 bottom-13 border-l-2 border-[#F5DF7A]" />
-        )}
+      <div className="relative isolate mt-4 px-3.5">
         {records.map((record) => (
           <MedicalRecord
             key={record.id}
@@ -116,6 +113,9 @@ export default function WeeklyRecord({
             category={record.category}
           />
         ))}
+        {records.length > 1 && (
+          <div className="pointer-events-none absolute -z-10 left-15.5 top-13 bottom-13 border-l-2 border-[#F5DF7A]" />
+        )}
       </div>
     </section>
   );

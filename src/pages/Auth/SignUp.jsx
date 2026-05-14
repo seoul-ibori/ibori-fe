@@ -138,18 +138,6 @@ export default function SignUp() {
     setIsLoading(true);
     try {
       const result = await postMedicalRecords(codefBody);
-      if (result?.resultCode === 'CF-00000') {
-        clearDraft(STEP1_DRAFT_KEY);
-        clearDraft(STEP2_DRAFT_KEY);
-        clearDraft(CODEF_BODY_KEY);
-        clearDraft(CODEF_TWOWAY_KEY);
-        sessionStorage.removeItem(SIGNUP_DONE_KEY);
-        showToast(
-          '건강보험공단에 자녀가 등록되어 있지 않습니다. 등록 완료 후 서비스 이용 부탁드립니다.'
-        );
-        navigate('/login');
-        return;
-      }
       sessionStorage.setItem(CODEF_BODY_KEY, JSON.stringify(codefBody));
       sessionStorage.setItem(CODEF_TWOWAY_KEY, JSON.stringify(result?.twoWayInfo ?? {}));
       goToStep('auth');
@@ -183,6 +171,30 @@ export default function SignUp() {
       });
       if (result?.resultCode === 'CF-03002') {
         showToast('카카오톡 인증을 완료해주세요.');
+        return;
+      }
+      if (result?.rawData?.result?.extraMessage === '조회 결과가 없습니다.') {
+        const userId = localStorage.getItem('userId');
+        if (userId) {
+          try {
+            await deleteUser({ userId });
+          } catch (deleteError) {
+            console.log('회원 정보 삭제 실패', deleteError);
+          }
+        }
+        TokenManager.clear();
+        localStorage.removeItem('userId');
+        localStorage.removeItem('username');
+        localStorage.removeItem('name');
+        clearDraft(STEP1_DRAFT_KEY);
+        clearDraft(STEP2_DRAFT_KEY);
+        clearDraft(CODEF_BODY_KEY);
+        clearDraft(CODEF_TWOWAY_KEY);
+        sessionStorage.removeItem(SIGNUP_DONE_KEY);
+        showToast(
+          '건강보험공단에 자녀가 등록되어 있지 않습니다. 등록 완료 후 서비스 이용 부탁드립니다.'
+        );
+        navigate('/login');
         return;
       }
       clearDraft(STEP1_DRAFT_KEY);

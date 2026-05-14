@@ -19,7 +19,7 @@ export default function MedicalRecord({ hospitalName, medicineName, date, catego
             <PillNoneIcon className="size-4.5 shrink-0" />
           )}
           <p
-            className={`whitespace-nowrap text-[15px] font-bold ${medicineName ? 'text-[#AB4C0A]' : 'text-[#B9B2A6]'}`}
+            className={`whitespace-nowrap text-[15px]  ${medicineName ? 'font-bold text-[#AB4C0A]' : 'font-medium text-[#B9B2A6]'}`}
           >
             {medicineName || '불러올 약 정보가 없어요.'}
           </p>

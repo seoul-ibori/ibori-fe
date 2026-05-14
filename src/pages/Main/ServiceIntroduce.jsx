@@ -48,7 +48,7 @@ const SLIDES = [
       '지역 데이터로 병원 혼잡도를 예측해요',
       '가족 모두가 같은 정보를 쉽게 공유할 수 있어요',
     ],
-    titleColor: '#5F3010',
+    titleColor: '#FFFCF9',
     descColor: '#AB4C0A',
     activeDot: '#FFFCF9',
     inactiveDot: 'rgba(255, 252, 249, 0.6)',

@@ -6,7 +6,7 @@ const PUBLIC_API_BASE_URL = BASE_URL;
 const PRIVATE_API_BASE_URL = BASE_URL;
 const REQUEST_TIMEOUT = 10000; // 10초
 const REFRESH_ENDPOINT = '/auth/refresh';
-const LOGIN_PATH = '/login';
+const LOGIN_PATH = '/introduce';
 
 // ─── 토큰 관리 헬퍼 ─────────────────────────────────
 const TokenManager = {

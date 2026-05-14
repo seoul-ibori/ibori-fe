@@ -323,7 +323,7 @@ export default function SearchHospital() {
           type="button"
           onClick={handleMyLocation}
           aria-label="현재 위치"
-          className="absolute right-6 bottom-8 z-10 flex size-13.75 items-center justify-center rounded-full bg-[#ffc721] text-[#fffcf9] shadow-[0_4px_8px_rgba(0,0,0,0.15)] transition-colors active:bg-[#e28702] active:text-[#f5df7a]"
+          className="absolute right-6 bottom-8 z-40 flex size-13.75 items-center justify-center rounded-full bg-[#ffc721] text-[#fffcf9] shadow-[0_4px_8px_rgba(0,0,0,0.15)] transition-colors active:bg-[#e28702] active:text-[#f5df7a]"
         >
           <MyLocationIcon className="size-8.25" />
         </button>
