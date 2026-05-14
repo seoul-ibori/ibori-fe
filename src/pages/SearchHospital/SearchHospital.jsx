@@ -271,7 +271,7 @@ export default function SearchHospital() {
 
       {searchFocused && <div className="absolute inset-0 z-15 bg-white" />}
 
-      <div className="pointer-events-none w-full absolute items-center top-4.5 z-20 flex flex-col gap-3">
+      <div className="pointer-events-none w-full px-4 absolute items-center top-4.5 z-20 flex flex-col gap-3">
         <div className="pointer-events-auto flex items-center gap-3 " onClick={closeAllDrawers}>
           <SearchBar
             value={keyword}
