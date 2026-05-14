@@ -67,6 +67,7 @@ export default function SearchHospital() {
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerSnap, setDrawerSnap] = useState(0.45);
+  const [drawerOpenKey, setDrawerOpenKey] = useState(0);
   const [selectedHospital, setSelectedHospital] = useState(null);
   const [searchFocused, setSearchFocused] = useState(false);
   const [isDay, setIsDay] = useState(() => getIsDay());
@@ -81,6 +82,19 @@ export default function SearchHospital() {
   });
 
   useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const originalHtml = html.style.overscrollBehaviorY;
+    const originalBody = body.style.overscrollBehaviorY;
+    html.style.overscrollBehaviorY = 'none';
+    body.style.overscrollBehaviorY = 'none';
+    return () => {
+      html.style.overscrollBehaviorY = originalHtml;
+      body.style.overscrollBehaviorY = originalBody;
+    };
+  }, []);
+
+  useEffect(() => {
     let alive = true;
     setIsLoading(true);
     (async () => {
@@ -89,6 +103,7 @@ export default function SearchHospital() {
         if (alive) {
           setPrediction(data);
           setDrawerOpen(true);
+          setDrawerOpenKey((k) => k + 1);
         }
       } catch (error) {
         console.log('동 혼잡도 예측 실패', error);
@@ -171,17 +186,10 @@ export default function SearchHospital() {
     [selectedDistrict]
   );
 
-  const handleSelectSuggestion = useCallback((suggestion) => {
-    setKeyword(suggestion.displayName);
-    setSelectedDistrict(suggestion);
-    setSuggestions([]);
-  }, []);
-
-  const handleSearchSubmit = useCallback(() => {
-    if (!selectedDistrict) return;
-    const { dong } = selectedDistrict;
-    const lat = selectedDistrict.lat ?? selectedDistrict.latitude;
-    const lng = selectedDistrict.lng ?? selectedDistrict.longitude;
+  const applyDistrictSearch = useCallback((district) => {
+    const { dong } = district;
+    const lat = district.lat ?? district.latitude;
+    const lng = district.lng ?? district.longitude;
     if (lat != null && lng != null) {
       setCenter({ lat, lng });
       setSearchLocation({ lat, lng, dong });
@@ -189,12 +197,30 @@ export default function SearchHospital() {
       setSearchLocation((prev) => ({ ...prev, dong }));
     }
     setSearchFocused(false);
-  }, [selectedDistrict]);
+  }, []);
+
+  const handleSelectSuggestion = useCallback(
+    (suggestion) => {
+      setKeyword(suggestion.displayName);
+      setSelectedDistrict(suggestion);
+      setSuggestions([]);
+      applyDistrictSearch(suggestion);
+    },
+    [applyDistrictSearch]
+  );
+
+  const handleSearchSubmit = useCallback(() => {
+    if (!selectedDistrict) return;
+    applyDistrictSearch(selectedDistrict);
+  }, [selectedDistrict, applyDistrictSearch]);
 
   const toggleDrawer = useCallback(() => {
     setSelectedHospital(null);
     setDrawerOpen((prev) => {
-      if (!prev) setDrawerSnap(0.45);
+      if (!prev) {
+        setDrawerSnap(0.45);
+        setDrawerOpenKey((k) => k + 1);
+      }
       return !prev;
     });
   }, []);
@@ -245,11 +271,8 @@ export default function SearchHospital() {
 
       {searchFocused && <div className="absolute inset-0 z-15 bg-white" />}
 
-      <div className="pointer-events-none absolute inset-x-6.25 top-4.5 z-20 flex flex-col gap-3">
-        <div
-          className="pointer-events-auto flex items-center gap-3 pr-14"
-          onClick={closeAllDrawers}
-        >
+      <div className="pointer-events-none w-full absolute items-center top-4.5 z-20 flex flex-col gap-3">
+        <div className="pointer-events-auto flex items-center gap-3 " onClick={closeAllDrawers}>
           <SearchBar
             value={keyword}
             onChange={handleKeywordChange}
@@ -264,7 +287,7 @@ export default function SearchHospital() {
             type="button"
             onClick={toggleDrawer}
             aria-expanded={drawerOpen}
-            className={`pointer-events-auto flex items-center gap-1.25 self-start rounded-md px-2.5 py-1.75 shadow-[0_0_8px_rgba(0,0,0,0.15)] transition-colors ${
+            className={`pointer-events-auto flex ml-4 items-center gap-1.25 self-start rounded-md px-2.5 py-1.75 shadow-[0_0_8px_rgba(0,0,0,0.15)] transition-colors ${
               drawerOpen ? 'bg-[#e28702]' : 'bg-[#ffc721]'
             }`}
           >
@@ -297,13 +320,14 @@ export default function SearchHospital() {
           type="button"
           onClick={handleMyLocation}
           aria-label="현재 위치"
-          className="absolute right-6 bottom-8 z-10 flex size-13.75 items-center justify-center rounded-full bg-[#ffc721] shadow-[0_4px_8px_rgba(0,0,0,0.15)]"
+          className="absolute right-6 bottom-8 z-10 flex size-13.75 items-center justify-center rounded-full bg-[#ffc721] text-[#fffcf9] shadow-[0_4px_8px_rgba(0,0,0,0.15)] transition-colors active:bg-[#e28702] active:text-[#f5df7a]"
         >
           <MyLocationIcon className="size-8.25" />
         </button>
       )}
 
       <CongestionDrawer
+        key={drawerOpenKey}
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
         snap={drawerSnap}

@@ -51,9 +51,9 @@ export default function ChildCard({ child, deleteMode = false, onClick, onDelete
                 {child.nickname ? (
                   child.nickname
                 ) : (
-                  <>
-                    <span className="text-[#FF3D00]">*</span> 별명을 지어줘요
-                  </>
+                  <p>
+                    <span className="text-[#FF3D00]">* </span>별명을 지어줘요
+                  </p>
                 )}
               </span>
             </div>

@@ -84,6 +84,14 @@ export default function RecordUpdate() {
     setIsLoading(true);
     try {
       const result = await postMedicalRecords(codefBody);
+      if (result?.resultCode === 'CF-00000') {
+        clearAllDrafts();
+        showToast(
+          '건강보험공단에 자녀가 등록되어 있지 않습니다. 등록 완료 후 서비스 이용 부탁드립니다.'
+        );
+        navigate('/login');
+        return;
+      }
       sessionStorage.setItem(CODEF_BODY_KEY, JSON.stringify(codefBody));
       sessionStorage.setItem(CODEF_TWOWAY_KEY, JSON.stringify(result?.twoWayInfo ?? {}));
       goToStep('auth');

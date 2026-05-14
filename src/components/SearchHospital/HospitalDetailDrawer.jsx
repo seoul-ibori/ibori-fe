@@ -115,8 +115,8 @@ export default function HospitalDetailDrawer({ hospital, onClose }) {
                 aria-hidden={!expanded}
               >
                 <div className="min-h-0 overflow-hidden">
-                  <div className="ml-auto w-56.75 bg-[#faf7f2] px-6 py-6">
-                    <div className="flex flex-col gap-6">
+                  <div className="ml-auto w-56.75 bg-[#faf7f2] py-6">
+                    <div className="flex flex-col gap-6 items-center">
                       {weekly.map((w) => (
                         <p
                           key={w.day}
@@ -139,7 +139,17 @@ export default function HospitalDetailDrawer({ hospital, onClose }) {
             <div className="shrink-0 px-11.25 mt-8 pb-5">
               <button
                 type="button"
-                className="w-full rounded-[10px] bg-[#ffc721] py-4 text-[18px] font-semibold text-white"
+                onClick={() => {
+                  if (!hospital) return;
+                  const name = encodeURIComponent(hospital.name ?? '');
+                  const { lat, lng } = hospital;
+                  const url =
+                    lat != null && lng != null
+                      ? `https://map.kakao.com/link/map/${name},${lat},${lng}`
+                      : `https://map.kakao.com/?q=${name}`;
+                  window.open(url, '_blank', 'noopener,noreferrer');
+                }}
+                className="w-full rounded-[10px] bg-[#ffc721] py-4 text-[18px] font-semibold text-white transition-colors active:bg-[#e28702] active:text-[#f5df7a]"
               >
                 세부정보 확인하기
               </button>
